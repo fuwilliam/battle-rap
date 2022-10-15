@@ -1,0 +1,53 @@
+[2022-10-15 21:11:33,746] {taskinstance.py:1159} INFO - Dependencies all met for <TaskInstance: load_rappers_dag_pyop.load_tracks_to_gcs manual__2022-10-15T21:11:19.694785+00:00 [queued]>
+[2022-10-15 21:11:33,758] {taskinstance.py:1159} INFO - Dependencies all met for <TaskInstance: load_rappers_dag_pyop.load_tracks_to_gcs manual__2022-10-15T21:11:19.694785+00:00 [queued]>
+[2022-10-15 21:11:33,758] {taskinstance.py:1356} INFO - 
+--------------------------------------------------------------------------------
+[2022-10-15 21:11:33,758] {taskinstance.py:1357} INFO - Starting attempt 1 of 1
+[2022-10-15 21:11:33,758] {taskinstance.py:1358} INFO - 
+--------------------------------------------------------------------------------
+[2022-10-15 21:11:33,772] {taskinstance.py:1377} INFO - Executing <Task(PostgresToGCSOperator): load_tracks_to_gcs> on 2022-10-15 21:11:19.694785+00:00
+[2022-10-15 21:11:33,777] {standard_task_runner.py:52} INFO - Started process 5737 to run task
+[2022-10-15 21:11:33,781] {standard_task_runner.py:79} INFO - Running: ['***', 'tasks', 'run', 'load_rappers_dag_pyop', 'load_tracks_to_gcs', 'manual__2022-10-15T21:11:19.694785+00:00', '--job-id', '18', '--raw', '--subdir', 'DAGS_FOLDER/load_rappers_dag_pyop.py', '--cfg-path', '/tmp/tmp2ypq8h4m', '--error-file', '/tmp/tmpx86f4127']
+[2022-10-15 21:11:33,782] {standard_task_runner.py:80} INFO - Job 18: Subtask load_tracks_to_gcs
+[2022-10-15 21:11:33,836] {task_command.py:369} INFO - Running <TaskInstance: load_rappers_dag_pyop.load_tracks_to_gcs manual__2022-10-15T21:11:19.694785+00:00 [running]> on host 6300e87c6973
+[2022-10-15 21:11:33,917] {taskinstance.py:1571} INFO - Exporting the following env vars:
+AIRFLOW_CTX_DAG_OWNER=***
+AIRFLOW_CTX_DAG_ID=load_rappers_dag_pyop
+AIRFLOW_CTX_TASK_ID=load_tracks_to_gcs
+AIRFLOW_CTX_EXECUTION_DATE=2022-10-15T21:11:19.694785+00:00
+AIRFLOW_CTX_TRY_NUMBER=1
+AIRFLOW_CTX_DAG_RUN_ID=manual__2022-10-15T21:11:19.694785+00:00
+[2022-10-15 21:11:33,920] {sql_to_gcs.py:139} INFO - Executing query
+[2022-10-15 21:11:33,929] {base.py:68} INFO - Using connection ID 'postgres-dc' for task execution.
+[2022-10-15 21:11:33,947] {sql_to_gcs.py:155} INFO - Writing local data files
+[2022-10-15 21:11:33,950] {sql_to_gcs.py:160} INFO - Uploading chunk file #0 to GCS.
+[2022-10-15 21:11:33,957] {base.py:68} INFO - Using connection ID 'google_cloud_default' for task execution.
+[2022-10-15 21:11:33,959] {taskinstance.py:1889} ERROR - Task failed with exception
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/providers/google/cloud/transfers/sql_to_gcs.py", line 161, in execute
+    self._upload_to_gcs(file_to_upload)
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/providers/google/cloud/transfers/sql_to_gcs.py", line 358, in _upload_to_gcs
+    gzip=self.gzip if file_to_upload.get('file_name') != self.schema_filename else False,
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/providers/google/cloud/hooks/gcs.py", line 495, in upload
+    client = self.get_conn()
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/providers/google/cloud/hooks/gcs.py", line 159, in get_conn
+    credentials=self._get_credentials(), client_info=CLIENT_INFO, project=self.project_id
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/providers/google/common/hooks/base_google.py", line 261, in _get_credentials
+    credentials, _ = self._get_credentials_and_project_id()
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/providers/google/common/hooks/base_google.py", line 247, in _get_credentials_and_project_id
+    delegates=delegates,
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/providers/google/cloud/utils/credentials_provider.py", line 321, in get_credentials_and_project_id
+    return _CredentialProvider(*args, **kwargs).get_credentials_and_project()
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/providers/google/cloud/utils/credentials_provider.py", line 223, in get_credentials_and_project
+    credentials, project_id = self._get_credentials_using_key_path()
+  File "/home/airflow/.local/lib/python3.7/site-packages/airflow/providers/google/cloud/utils/credentials_provider.py", line 273, in _get_credentials_using_key_path
+    self.key_path, scopes=self.scopes
+  File "/home/airflow/.local/lib/python3.7/site-packages/google/oauth2/service_account.py", line 239, in from_service_account_file
+    filename, require=["client_email", "token_uri"]
+  File "/home/airflow/.local/lib/python3.7/site-packages/google/auth/_service_account_info.py", line 72, in from_filename
+    with io.open(filename, "r", encoding="utf-8") as json_file:
+FileNotFoundError: [Errno 2] No such file or directory: '/home/fuwilliam/airflow/battle-rap-bq-creds.json'
+[2022-10-15 21:11:33,969] {taskinstance.py:1400} INFO - Marking task as FAILED. dag_id=load_rappers_dag_pyop, task_id=load_tracks_to_gcs, execution_date=20221015T211119, start_date=20221015T211133, end_date=20221015T211133
+[2022-10-15 21:11:33,981] {standard_task_runner.py:97} ERROR - Failed to execute job 18 for task load_tracks_to_gcs ([Errno 2] No such file or directory: '/home/fuwilliam/airflow/battle-rap-bq-creds.json'; 5737)
+[2022-10-15 21:11:33,994] {local_task_job.py:156} INFO - Task exited with return code 1
+[2022-10-15 21:11:34,031] {local_task_job.py:273} INFO - 0 downstream tasks scheduled from follow-on schedule check

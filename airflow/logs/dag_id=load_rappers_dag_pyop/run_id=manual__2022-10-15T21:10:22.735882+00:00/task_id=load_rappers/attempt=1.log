@@ -1,0 +1,31 @@
+[2022-10-15 21:10:25,310] {taskinstance.py:1159} INFO - Dependencies all met for <TaskInstance: load_rappers_dag_pyop.load_rappers manual__2022-10-15T21:10:22.735882+00:00 [queued]>
+[2022-10-15 21:10:25,320] {taskinstance.py:1159} INFO - Dependencies all met for <TaskInstance: load_rappers_dag_pyop.load_rappers manual__2022-10-15T21:10:22.735882+00:00 [queued]>
+[2022-10-15 21:10:25,320] {taskinstance.py:1356} INFO - 
+--------------------------------------------------------------------------------
+[2022-10-15 21:10:25,320] {taskinstance.py:1357} INFO - Starting attempt 1 of 1
+[2022-10-15 21:10:25,320] {taskinstance.py:1358} INFO - 
+--------------------------------------------------------------------------------
+[2022-10-15 21:10:25,346] {taskinstance.py:1377} INFO - Executing <Task(PythonOperator): load_rappers> on 2022-10-15 21:10:22.735882+00:00
+[2022-10-15 21:10:25,384] {standard_task_runner.py:52} INFO - Started process 5694 to run task
+[2022-10-15 21:10:25,457] {standard_task_runner.py:79} INFO - Running: ['***', 'tasks', 'run', 'load_rappers_dag_pyop', 'load_rappers', 'manual__2022-10-15T21:10:22.735882+00:00', '--job-id', '13', '--raw', '--subdir', 'DAGS_FOLDER/load_rappers_dag_pyop.py', '--cfg-path', '/tmp/tmpdew4px64', '--error-file', '/tmp/tmp161pb2fm']
+[2022-10-15 21:10:25,460] {standard_task_runner.py:80} INFO - Job 13: Subtask load_rappers
+[2022-10-15 21:10:26,171] {task_command.py:369} INFO - Running <TaskInstance: load_rappers_dag_pyop.load_rappers manual__2022-10-15T21:10:22.735882+00:00 [running]> on host 6300e87c6973
+[2022-10-15 21:10:27,188] {taskinstance.py:1571} INFO - Exporting the following env vars:
+AIRFLOW_CTX_DAG_OWNER=***
+AIRFLOW_CTX_DAG_ID=load_rappers_dag_pyop
+AIRFLOW_CTX_TASK_ID=load_rappers
+AIRFLOW_CTX_EXECUTION_DATE=2022-10-15T21:10:22.735882+00:00
+AIRFLOW_CTX_TRY_NUMBER=1
+AIRFLOW_CTX_DAG_RUN_ID=manual__2022-10-15T21:10:22.735882+00:00
+[2022-10-15 21:10:27,191] {logging_mixin.py:115} INFO - Compiling artist list...
+[2022-10-15 21:10:27,877] {logging_mixin.py:115} INFO - Loading artists...
+[2022-10-15 21:10:33,285] {logging_mixin.py:115} INFO - 20 artists loaded in 5.41 seconds
+[2022-10-15 21:10:33,285] {logging_mixin.py:115} INFO - Loading tracks...
+[2022-10-15 21:10:38,541] {logging_mixin.py:115} INFO - 100 tracks loaded in 5.26 seconds
+[2022-10-15 21:10:38,586] {logging_mixin.py:115} INFO - Loading raw dataframes to DW...
+[2022-10-15 21:10:38,915] {logging_mixin.py:115} INFO - Loaded in 0.33 seconds
+[2022-10-15 21:10:38,915] {logging_mixin.py:115} INFO - Done!
+[2022-10-15 21:10:38,916] {python.py:173} INFO - Done. Returned value was: None
+[2022-10-15 21:10:38,931] {taskinstance.py:1400} INFO - Marking task as SUCCESS. dag_id=load_rappers_dag_pyop, task_id=load_rappers, execution_date=20221015T211022, start_date=20221015T211025, end_date=20221015T211038
+[2022-10-15 21:10:38,979] {local_task_job.py:156} INFO - Task exited with return code 0
+[2022-10-15 21:10:39,028] {local_task_job.py:273} INFO - 2 downstream tasks scheduled from follow-on schedule check
