@@ -3,9 +3,9 @@ from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import PythonOperator
 from airflow.providers.google.cloud.transfers.postgres_to_gcs import PostgresToGCSOperator
 from airflow.utils.dates import days_ago
-import sys
-import os
-sys.path.insert(0,os.path.abspath(os.path.dirname(__file__)))# sys.path.append('/home/fuwilliam/airflow/dags/scripts/')
+# import sys
+# import os
+# sys.path.insert(0,os.path.abspath(os.path.dirname(__file__)))# sys.path.append('/home/fuwilliam/airflow/dags/scripts/')
 from scripts.load_rappers import main
 
 GCS_BUCKET = 'raw_battle_rap'
