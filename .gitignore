@@ -1,0 +1,2 @@
+./airflow/dags/scripts/__pycache__/*
+./airflow/logs/*
