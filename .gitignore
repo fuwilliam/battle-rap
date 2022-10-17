@@ -6,3 +6,5 @@ __pycache__/
 airflow/logs/
 airflow/dags/scripts/__pycache__/
 airflow/dags/__pycache__/
+
+gcs-airflow-keyfile.json
