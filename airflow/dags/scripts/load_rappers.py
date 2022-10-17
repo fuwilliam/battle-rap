@@ -12,21 +12,21 @@ client_id = "be914a3cdfac496085266e5043790cc3"
 client_secret = "a4459a20e0594023a7229fc1a9ea4d8c"
 
 genreDict = {
-    "rap": 150,
-    "hip hop": 150,
-    "alternative hip hop": 50,
-    "escape room": 50,
-    "drill": 30,
-    "grime": 20,
+    # "rap": 150,
+    # "hip hop": 150,
+    # "alternative hip hop": 50,
+    # "escape room": 50,
+    # "drill": 30,
+    # "grime": 20,
     "pluggnb": 20
 }
 
 playlistDict = {
-    "37i9dQZF1DX0XUsuxWHRQd": "Rap Caviar",
-    "37i9dQZF1DWY4xHQp97fN6": "Get Turnt",
-    "37i9dQZF1DWTggY0yqBxES": "Alternative Hip Hop",
-    "37i9dQZF1DX9oh43oAzkyx": "Beast Mode Hip Hop",
-    "37i9dQZF1DX186v583rmzp": "90s Hip Hop"
+    # "37i9dQZF1DX0XUsuxWHRQd": "Rap Caviar",
+    # "37i9dQZF1DWY4xHQp97fN6": "Get Turnt",
+    # "37i9dQZF1DWTggY0yqBxES": "Alternative Hip Hop",
+    # "37i9dQZF1DX9oh43oAzkyx": "Beast Mode Hip Hop",
+    # "37i9dQZF1DX186v583rmzp": "90s Hip Hop"
 }
 
 sqlalchemy_conn = 'postgresql://airflow:airflow@host.docker.internal:5555/battle-rap' #host.docker.internal / 127.0.0.1 / localhost

@@ -1,2 +1,8 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
 airflow/logs/
 airflow/dags/scripts/__pycache__/
+airflow/dags/__pycache__/
