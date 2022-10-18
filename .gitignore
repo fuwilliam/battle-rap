@@ -2,9 +2,14 @@
 __pycache__/
 *.py[cod]
 *$py.class
+*.pyc
+*test.py
+.env
+*.env
 
 airflow/logs/
 airflow/dags/scripts/__pycache__/
 airflow/dags/__pycache__/
 
+airflow/gcs-airflow-keyfile.json
 gcs-airflow-keyfile.json
