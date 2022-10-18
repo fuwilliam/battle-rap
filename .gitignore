@@ -10,6 +10,10 @@ __pycache__/
 airflow/logs/
 airflow/dags/scripts/__pycache__/
 airflow/dags/__pycache__/
+airflow/dags/load_rappers.egg-info/
+airflow/pgdata/
+
 
 airflow/gcs-airflow-keyfile.json
 gcs-airflow-keyfile.json
+

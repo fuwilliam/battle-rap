@@ -9,28 +9,29 @@ import time
 
 from sqlalchemy import create_engine
 
-load_dotenv()
+path_env = os.path.abspath(__file__ + "/../../")
+load_dotenv(os.path.join(path_env, '.env'))
 
-client_id = os.getenv('spotify_client_id')
-client_secret = os.getenv('spotify_client_secret')
-sqlalchemy_conn = os.getenv('postgres_conn')
+client_id = os.getenv('SPOTIFY_CLIENT_ID')
+client_secret = os.getenv('SPOTIFY_CLIENT_SECRET')
+sqlalchemy_conn = os.getenv('POSTGRES_CONN')
 
 genreDict = {
-    "rap": 150,
-    "hip hop": 150,
-    "alternative hip hop": 50,
-    "escape room": 50,
-    "drill": 30,
-    "grime": 20,
+    #"rap": 150,
+    # "hip hop": 150,
+    # "alternative hip hop": 50,
+    # "escape room": 50,
+    # "drill": 30,
+    # "grime": 20,
     "pluggnb": 20
 }
 
 playlistDict = {
-    "37i9dQZF1DX0XUsuxWHRQd": "Rap Caviar",
-    "37i9dQZF1DWY4xHQp97fN6": "Get Turnt",
-    "37i9dQZF1DWTggY0yqBxES": "Alternative Hip Hop",
-    "37i9dQZF1DX9oh43oAzkyx": "Beast Mode Hip Hop",
-    "37i9dQZF1DX186v583rmzp": "90s Hip Hop"
+    # "37i9dQZF1DX0XUsuxWHRQd": "Rap Caviar",
+    # "37i9dQZF1DWY4xHQp97fN6": "Get Turnt",
+    # "37i9dQZF1DWTggY0yqBxES": "Alternative Hip Hop",
+    # "37i9dQZF1DX9oh43oAzkyx": "Beast Mode Hip Hop",
+    # "37i9dQZF1DX186v583rmzp": "90s Hip Hop"
 }
 
 def compile_artists(lister, genreDict, playlistDict):
