@@ -1,59 +1,46 @@
 #!/usr/bin/env python
 # coding: utf-8
-
+import os
+from dotenv import load_dotenv
 from scripts.artist_lister import ArtistLister
+import scripts.spotify_dicts
 
 import pandas as pd
 import time
 
 from sqlalchemy import create_engine
 
-client_id = "be914a3cdfac496085266e5043790cc3"
-client_secret = "a4459a20e0594023a7229fc1a9ea4d8c"
+path_env = os.path.abspath(__file__ + "/../../")
+load_dotenv(os.path.join(path_env, '.env'))
 
-genreDict = {
-    # "rap": 150,
-    # "hip hop": 150,
-    # "alternative hip hop": 50,
-    # "escape room": 50,
-    # "drill": 30,
-    # "grime": 20,
-    "pluggnb": 20
-}
+client_id = os.getenv('SPOTIFY_CLIENT_ID')
+client_secret = os.getenv('SPOTIFY_CLIENT_SECRET')
+sqlalchemy_conn = os.getenv('POSTGRES_CONN')
 
-playlistDict = {
-    # "37i9dQZF1DX0XUsuxWHRQd": "Rap Caviar",
-    # "37i9dQZF1DWY4xHQp97fN6": "Get Turnt",
-    # "37i9dQZF1DWTggY0yqBxES": "Alternative Hip Hop",
-    # "37i9dQZF1DX9oh43oAzkyx": "Beast Mode Hip Hop",
-    # "37i9dQZF1DX186v583rmzp": "90s Hip Hop"
-}
-
-sqlalchemy_conn = 'postgresql://airflow:airflow@host.docker.internal:5555/battle-rap' #host.docker.internal / 127.0.0.1 / localhost
+genreDict = scripts.spotify_dicts.genreDict
+playlistDict = scripts.spotify_dicts.playlistDict
 
 def compile_artists(lister, genreDict, playlistDict):
     print('Compiling artist list...')
     return lister.combine_artists(genreDict, playlistDict)
 
 def get_artist_data(lister, combinedArtists):
-    start_time = time.time()
+    start_time = time.perf_counter()
     print('Loading artists...')
     dfRappers = pd.DataFrame(lister.pull_artist_data(combinedArtists))
-    duration = time.time() - start_time
+    duration = time.perf_counter() - start_time
     print(f'{len(dfRappers)} artists loaded in {duration:.2f} seconds')
     return dfRappers
 
 def get_tracks_data(lister, combinedArtists):
-    start_time = time.time()
+    start_time = time.perf_counter()
     print('Loading tracks...')
     dfTopTracks = pd.DataFrame(lister.pull_artist_top_tracks(combinedArtists))
-    duration = time.time() - start_time
+    duration = time.perf_counter() - start_time
     print(f'{len(dfTopTracks)} tracks loaded in {duration:.2f} seconds')
     return dfTopTracks
 
 def add_load_date(dfRappers, dfTopTracks):
-    # dfRappers["flag_main_genre"] = dfRappers.genres.astype(str).str.contains("rap|hip hop|drill|grime|pluggnb|escape room")
-    # dfRappers["flag_excl_genre"] = (dfRappers.genres.astype(str).str.contains("rap rock|rap metal|reggaeton|hyperpop|electropop")) & (~dfRappers.genres.astype(str).str.contains("hip hop"))
     dfRappers['load_date'] = pd.Timestamp(time.strftime('%Y-%m-%d %H:%M:%S %Z', time.gmtime(time.time())))
     dfTopTracks['load_date'] = pd.Timestamp(time.strftime('%Y-%m-%d %H:%M:%S %Z', time.gmtime(time.time())))
 
@@ -62,11 +49,11 @@ def create_db_engine(sqlalchemy_conn):
     return engine
 
 def load_to_db(dfRappers, dfTopTracks, engine):
-    start_time = time.time()
+    start_time = time.perf_counter()
     print('Loading raw dataframes to DW...')
     dfRappers.to_sql('rappers', engine, if_exists='replace', index=False)
     dfTopTracks.to_sql('top_tracks', engine, if_exists='replace', index=False)
-    duration = time.time() - start_time
+    duration = time.perf_counter() - start_time
     print(f'Loaded in {duration:.2f} seconds')
 
 def main():
