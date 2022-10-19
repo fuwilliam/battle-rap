@@ -1,0 +1,76 @@
+version: 2
+
+sources:
+  - name: raw
+    tables:
+      - name: rappers
+      - name: top_tracks
+
+models:
+  - name: stg_genres
+    description: "Staging table to convert genre string into array"
+    columns:
+      - name: artist_id
+        description: "Spotify's artist_id identifier"
+        tests:
+          - unique
+          - not_null
+      - name: genre_array
+        description: "Array containing up to 3 genres associated with artist_id"
+
+  - name: stg_rappers
+    description: "Basically casting load_date to proper timestamp format"
+    columns:
+      - name: artist_id
+        description: "Spotify's artist_id identifier"
+        tests:
+          - unique
+          - not_null
+      - name: artist_name
+        description: "The artist's name"
+        tests:
+          - not_null
+      - name: popularity
+        description: "Artist's popularity according to Spotify - ranges from 0 to 100"
+        tests:
+          - not_null
+      - name: followers
+        description: "Artist's follower count"
+        tests:
+          - not_null
+      - name: image_url
+        description: "URL for the artist's profile picture on Spotify"
+      - name: load_date
+        description: "Timestamp for when the record was initially loaded to Postgres from Spotify's API"
+        tests:
+          - not_null
+
+  - name: stg_top_tracks
+    description: "Basically casting load_date to proper timestamp format"
+    columns:
+      - name: artist_id
+        description: "Spotify's artist_id identifier"
+        tests:
+          - not_null
+      - name: track_rank
+        description: "Rank for the track, according to Spotify's US market. A record with track_rank = 2 means it is the artist's second top track."
+        tests:
+          - not_null
+      - name: track_name
+        description: "The track (song) name"
+        tests:
+          - not_null
+      - name: track_id
+        description: "Spotify's track_id identifier"
+        tests:
+          - not_null
+      - name: track_url
+        description: "URL to play the track on Spotify"
+        tests:
+          - not_null
+      - name: preview_url
+        description: "URL for a short snippet/preview of the track - often not available"
+      - name: load_date
+        description: "Timestamp for when the record was initially loaded to Postgres from Spotify's API"
+        tests:
+          - not_null

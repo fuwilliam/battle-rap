@@ -1,9 +1,9 @@
 
-name: 'dbt_models_wow'
+name: 'dbt_battle_rap'
 version: '1.0.0'
 config-version: 2
 
-profile: 'dbt_models'
+profile: 'dbt_battle_rap'
 
 model-paths: ["models"]
 test-paths: ["tests"]
@@ -14,15 +14,11 @@ clean-targets:         # directories to be removed by `dbt clean`
   - "target"
   - "dbt_packages"
 
-
-# Configuring models
-# Full documentation: https://docs.getdbt.com/docs/configuring-models
-
-# In this example config, we tell dbt to build all models in the example/ directory
-# as tables. These settings can be overridden in the individual model files
-# using the `{{ config(...) }}` macro.
 models:
-  dbt_models:
-    # Config indicated by + and applies to all files under models/example/
-    example:
+  dbt_battle_rap:
+    staging:
+      schema: staging
+      +materialized: view
+    battle_rap:
+      schema: battle-rap
       +materialized: table
