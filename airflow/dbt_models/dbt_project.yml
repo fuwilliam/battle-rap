@@ -1,9 +1,9 @@
 
-name: 'dbt_battle_rap'
+name: 'battle_rap'
 version: '1.0.0'
 config-version: 2
 
-profile: 'dbt_battle_rap'
+profile: 'default'
 
 model-paths: ["models"]
 test-paths: ["tests"]
@@ -15,10 +15,10 @@ clean-targets:         # directories to be removed by `dbt clean`
   - "dbt_packages"
 
 models:
-  dbt_battle_rap:
+  battle_rap:
     staging:
       schema: staging
       +materialized: view
     battle_rap:
-      schema: battle-rap
+      schema: battle_rap
       +materialized: table
