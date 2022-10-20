@@ -3,7 +3,7 @@ name: 'dbt_battle_rap'
 version: '1.0.0'
 config-version: 2
 
-profile: 'dbt_models'
+profile: 'dbt_battle_rap'
 
 model-paths: ["models"]
 test-paths: ["tests"]
