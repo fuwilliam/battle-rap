@@ -9,6 +9,8 @@ requests = "*"
 python-dotenv = "*"
 psycopg2 = "*"
 numpy = "*"
+apache-airflow-providers-dbt-cloud = {extras = ["http"], version = "*"}
+apache-airflow-providers-http = "*"
 
 [dev-packages]
 
