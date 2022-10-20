@@ -15,8 +15,9 @@ clean-targets:         # directories to be removed by `dbt clean`
   - "dbt_packages"
 
 models:
-  dbt_models:
-    staging:
-      schema: staging
-      +materialized: view
-
+  staging:
+    schema: staging
+    +materialized: view
+  battle-rap:
+    schema: battle-rap
+    +materialized: table

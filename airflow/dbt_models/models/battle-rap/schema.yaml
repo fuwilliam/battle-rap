@@ -1,25 +1,8 @@
 version: 2
 
-sources:
-  - name: raw
-    tables:
-      - name: rappers
-      - name: top_tracks
-
 models:
-  - name: stg_genres
-    description: "Staging table to convert genre string into array"
-    columns:
-      - name: artist_id
-        description: "Spotify's artist_id identifier"
-        tests:
-          - unique
-          - not_null
-      - name: genre_array
-        description: "Array containing up to 3 genres associated with artist_id"
-
-  - name: stg_rappers
-    description: "Basically casting load_date to proper timestamp format"
+  - name: rappers
+    description: "Contains artists' Spotify data (popularity, followers, associated genres)"
     columns:
       - name: artist_id
         description: "Spotify's artist_id identifier"
@@ -38,6 +21,16 @@ models:
         description: "Artist's follower count"
         tests:
           - not_null
+      - name: genres
+        description: "String containing up to 3 genres associated with the artist"
+      - name: is_valid_genre
+        description: "Flags if the artist's genres contain any of the (arbitrary) main rap genres"
+        tests:
+          - not_null
+      - name: is_excluded_genre
+        description: "Flags if the artist's genres contain any of the (arbitrary) non-rap genres and don't contain \"hip hop\""
+        tests:
+          - not_null
       - name: image_url
         description: "URL for the artist's profile picture on Spotify"
       - name: load_date
@@ -45,8 +38,8 @@ models:
         tests:
           - not_null
 
-  - name: stg_top_tracks
-    description: "Basically casting load_date to proper timestamp format"
+  - name: top_tracks
+    description: "Contains up to top 5 tracks associated with given artist within Spotify's US market"
     columns:
       - name: artist_id
         description: "Spotify's artist_id identifier"
@@ -70,6 +63,35 @@ models:
           - not_null
       - name: preview_url
         description: "URL for a short snippet/preview of the track - often not available"
+      - name: load_date
+        description: "Timestamp for when the record was initially loaded to Postgres from Spotify's API"
+        tests:
+          - not_null
+
+  - name: rappers_filtered
+    description: "Contains artists' Spotify data filtered by popularity, genres and followers"
+    columns:
+      - name: artist_id
+        description: "Spotify's artist_id identifier"
+        tests:
+          - unique
+          - not_null
+      - name: artist_name
+        description: "The artist's name"
+        tests:
+          - not_null
+      - name: popularity
+        description: "Artist's popularity according to Spotify - ranges from 0 to 100"
+        tests:
+          - not_null
+      - name: followers
+        description: "Artist's follower count"
+        tests:
+          - not_null
+      - name: genres
+        description: "String containing up to 3 genres associated with the artist"
+      - name: image_url
+        description: "URL for the artist's profile picture on Spotify"
       - name: load_date
         description: "Timestamp for when the record was initially loaded to Postgres from Spotify's API"
         tests:
