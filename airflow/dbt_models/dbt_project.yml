@@ -18,6 +18,6 @@ models:
     staging:
       schema: staging
       +materialized: view
-    battle_rap:
-      schema: battle_rap
+    mart:
+      schema: mart
       +materialized: table

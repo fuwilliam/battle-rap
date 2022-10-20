@@ -5,7 +5,7 @@ sources:
     tables:
       - name: rappers
       - name: top_tracks
-
+          
 models:
   - name: stg_genres
     description: "Staging table to convert genre string into array"
