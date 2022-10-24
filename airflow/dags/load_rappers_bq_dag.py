@@ -1,36 +1,37 @@
-import os
-from dotenv import load_dotenv
-
 from airflow import DAG
 from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import PythonOperator
 from airflow.providers.google.cloud.transfers.postgres_to_gcs import PostgresToGCSOperator
 from airflow.providers.google.cloud.transfers.gcs_to_bigquery import GCSToBigQueryOperator
 from airflow.providers.dbt.cloud.operators.dbt import DbtCloudRunJobOperator
-from airflow.utils.dates import days_ago
+from airflow.models import Variable
+from datetime import datetime
 
 from scripts.load_rappers import main
 
-load_dotenv()
+POSTGRES_CONN_ID = Variable.get('POSTGRES_CONN_ID')
+FILE_FORMAT = Variable.get('FILE_FORMAT')
+GCS_BUCKET = Variable.get('GCS_BUCKET')
+GCP_CONN_ID = Variable.get('GCP_CONN_ID')
 
-POSTGRES_CONNECTION_ID = os.getenv('POSTGRES_CONNECTION_ID')
-FILE_FORMAT = os.getenv('FILE_FORMAT')
-GCS_BUCKET = os.getenv('GCS_BUCKET')
-GCP_CONN_ID = os.getenv('GCP_CONN_ID')
+BQ_DS = Variable.get('BQ_DS')
+BQ_PROJECT = Variable.get('BQ_PROJECT')
 
-BQ_DS = os.getenv('BQ_DS')
-BQ_PROJECT = os.getenv('BQ_PROJECT')
+DBT_CONN_ID = Variable.get('DBT_CONN_ID')
+DBT_ACCOUNT_ID = Variable.get('DBT_ACCOUNT_ID')
+DBT_JOB_ID = Variable.get('DBT_JOB_ID')
 
-DBT_CONN_ID = os.getenv('DBT_CONN_ID')
-DBT_ACCOUNT_ID = os.getenv('DBT_ACCOUNT_ID')
-DBT_JOB_ID = os.getenv('DBT_JOB_ID')
+default_args = {
+    'retries': 3
+}
 
 with DAG(
     dag_id='load_rappers_bq_dag',
     schedule_interval='0 23 * * *',
-    start_date=days_ago(1),
+    start_date=datetime(2022, 10, 23),
     catchup=False,
-    max_active_runs=1
+    max_active_runs=1,
+    default_args=default_args
 ) as dag:
 
     empty = EmptyOperator(
@@ -45,7 +46,7 @@ with DAG(
     load_rappers_gcs_task = PostgresToGCSOperator(
         task_id=f'load_rappers_to_gcs',
         gcp_conn_id=GCP_CONN_ID,
-        postgres_conn_id=POSTGRES_CONNECTION_ID,
+        postgres_conn_id=POSTGRES_CONN_ID,
         sql=f'SELECT * FROM rappers;',
         bucket=GCS_BUCKET,
         filename=f'rappers/rappers.{FILE_FORMAT}',
@@ -57,7 +58,7 @@ with DAG(
     load_tracks_gcs_task = PostgresToGCSOperator(
         task_id=f'load_tracks_to_gcs',
         gcp_conn_id=GCP_CONN_ID,
-        postgres_conn_id=POSTGRES_CONNECTION_ID,
+        postgres_conn_id=POSTGRES_CONN_ID,
         sql=f'SELECT * FROM top_tracks;',
         bucket=GCS_BUCKET,
         filename=f'top_tracks/top_tracks.{FILE_FORMAT}',
@@ -103,4 +104,6 @@ with DAG(
         timeout=300
     )
 
-load_rappers_task >> [load_rappers_gcs_task, load_tracks_gcs_task] >> empty >> [load_rappers_bq_task, load_tracks_bq_task] >> trigger_dbt_cloud_job
+load_rappers_task >> [load_rappers_gcs_task, load_tracks_gcs_task] >> empty
+empty >> [load_rappers_bq_task, load_tracks_bq_task] >> trigger_dbt_cloud_job
+#chain(load_rappers_task, [load_rappers_gcs_task, load_tracks_gcs_task], [load_rappers_bq_task, load_tracks_bq_task], trigger_dbt_cloud_job)
