@@ -26,7 +26,7 @@ DBT_ACCOUNT_ID = os.getenv('DBT_ACCOUNT_ID')
 DBT_JOB_ID = os.getenv('DBT_JOB_ID')
 
 with DAG(
-    dag_id='load_rappers_dag',
+    dag_id='load_rappers_bq_dag',
     schedule_interval='0 23 * * *',
     start_date=days_ago(1),
     catchup=False,
