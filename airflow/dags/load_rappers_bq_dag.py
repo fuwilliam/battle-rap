@@ -6,25 +6,31 @@ from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import PythonOperator
 from airflow.providers.google.cloud.transfers.postgres_to_gcs import PostgresToGCSOperator
 from airflow.providers.google.cloud.transfers.gcs_to_bigquery import GCSToBigQueryOperator
+from airflow.providers.dbt.cloud.operators.dbt import DbtCloudRunJobOperator
 from airflow.utils.dates import days_ago
 
 from scripts.load_rappers import main
 
 load_dotenv()
 
-GCS_BUCKET = os.getenv('GCS_BUCKET')
 POSTGRES_CONNECTION_ID = os.getenv('POSTGRES_CONNECTION_ID')
-GCP_CONN_ID = os.getenv('GCP_CONN_ID')
 FILE_FORMAT = os.getenv('FILE_FORMAT')
+GCS_BUCKET = os.getenv('GCS_BUCKET')
+GCP_CONN_ID = os.getenv('GCP_CONN_ID')
+
 BQ_DS = os.getenv('BQ_DS')
 BQ_PROJECT = os.getenv('BQ_PROJECT')
+
+DBT_CONN_ID = os.getenv('DBT_CONN_ID')
+DBT_ACCOUNT_ID = os.getenv('DBT_ACCOUNT_ID')
+DBT_JOB_ID = os.getenv('DBT_JOB_ID')
 
 with DAG(
     dag_id='load_rappers_dag',
     schedule_interval='0 23 * * *',
     start_date=days_ago(1),
     catchup=False,
-    max_active_runs=3
+    max_active_runs=1
 ) as dag:
 
     empty = EmptyOperator(
@@ -88,8 +94,13 @@ with DAG(
         skip_leading_rows=1
     )
 
-    end_task = EmptyOperator(
-        task_id='end'
+    trigger_dbt_cloud_job = DbtCloudRunJobOperator(
+        task_id="trigger_dbt_cloud_job",
+        dbt_cloud_conn_id=DBT_CONN_ID,
+        account_id=DBT_ACCOUNT_ID,
+        job_id=DBT_JOB_ID,
+        check_interval=10,
+        timeout=300
     )
 
-load_rappers_task >> [load_rappers_gcs_task, load_tracks_gcs_task] >> empty >> [load_rappers_bq_task, load_tracks_bq_task] >> end_task
+load_rappers_task >> [load_rappers_gcs_task, load_tracks_gcs_task] >> empty >> [load_rappers_bq_task, load_tracks_bq_task] >> trigger_dbt_cloud_job

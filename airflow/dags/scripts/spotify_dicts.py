@@ -1,3 +1,4 @@
+# Dict of genres and number of artists to be returned.
 genreDict = {
     "rap": 150,
     "hip hop": 150,
@@ -8,6 +9,7 @@ genreDict = {
     "pluggnb": 20
 }
 
+# Dict of Spotify curated playlist IDs -- playlist name is irrelevant
 playlistDict = {
     "37i9dQZF1DX0XUsuxWHRQd": "Rap Caviar",
     "37i9dQZF1DWY4xHQp97fN6": "Get Turnt",
