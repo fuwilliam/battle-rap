@@ -45,6 +45,9 @@ models:
         description: "Spotify's artist_id identifier"
         tests:
           - not_null
+          - relationships:
+              to: ref('rappers')
+              field: artist_id
       - name: track_rank
         description: "Rank for the track, according to Spotify's US market. A record with track_rank = 2 means it is the artist's second top track."
         tests:
