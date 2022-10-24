@@ -1,6 +1,4 @@
-"""
-Dictionaries to define which genres and playlists will compose the list of artists
-"""
+"""Dictionaries to define which genres and playlists will compose the list of artists"""
 
 # Dict of genres and number of artists to be returned.
 genre_dict = {
