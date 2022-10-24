@@ -2,6 +2,7 @@ version: 2
 
 sources:
   - name: raw
+    description: "Sourced from Spotify API > Postgres > GCS > BQ"
     tables:
       - name: rappers
       - name: top_tracks
