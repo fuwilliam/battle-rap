@@ -1,3 +1,10 @@
+{{
+    config(
+        materialized='incremental',
+        unique_key='artist_id'
+    )
+}}
+
 SELECT
     artist_id,
     artist_name,
@@ -11,3 +18,7 @@ WHERE is_valid_genre = TRUE
 AND is_excluded_genre = FALSE
 AND popularity > 60
 AND followers > 100000
+
+{% if is_incremental() %}
+    AND load_date > (select max(load_date) from {{ this }})
+{% endif %}
