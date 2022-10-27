@@ -22,7 +22,7 @@ DBT_ACCOUNT_ID = Variable.get('DBT_ACCOUNT_ID')
 DBT_JOB_ID = Variable.get('DBT_JOB_ID')
 
 default_args = {
-    'retries': 3
+    'retries': 1
 }
 
 with DAG(
@@ -101,7 +101,7 @@ with DAG(
         account_id=DBT_ACCOUNT_ID,
         job_id=DBT_JOB_ID,
         check_interval=10,
-        timeout=300
+        timeout=120
     )
 
 load_rappers_task >> [load_rappers_gcs_task, load_tracks_gcs_task] >> empty
