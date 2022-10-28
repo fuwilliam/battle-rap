@@ -1,0 +1,24 @@
+
+Feed filtered rapper + top_tracks database to the Flask app
+
+Curate rapper list further?
+
+Get two randomly artists from the database:
+    - popularity filter?
+
+Show their names and pictures (url in the database) side by side
+    - click on picture = vote for artist
+    - hover on picture = play a preview_url (highest rank available)
+
+Below picture:
+    - list top 5 tracks
+    - click on track to link to Spotify
+    - hover on track to play preview URL?
+
+Header has routes to:
+    - Vote (main page)
+    - Rank (simple win rate ranking)
+    - Visualize (iframe for PBI dashboard -- dashboard has dbt freshness panel too)
+    - Code (github repo)
+
+
