@@ -68,7 +68,7 @@ class ArtistLister(SpotifyAPI):
 
         for i in list(artist_dict.keys()):
             payload = self.get_top_tracks(i)["tracks"]
-            for j in range(min(5, len(payload))):
+            for j in range(min(10, len(payload))):
                 tracks_dict["artist_id"].append(i)
                 tracks_dict["track_rank"].append(j + 1)
                 tracks_dict["track_name"].append(payload[j]["name"])

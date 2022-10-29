@@ -2,13 +2,13 @@
 
 # Dict of genres and number of artists to be returned.
 genre_dict = {
-    "rap": 150,
-    "hip hop": 150,
-    "alternative hip hop": 50,
-    "escape room": 50,
+    "rap": 120,
+    "hip hop": 120,
+    "alternative hip hop": 40,
+    "escape room": 40,
     "drill": 30,
     "grime": 20,
-    "pluggnb": 20,
+    "pluggnb": 20
 }
 
 # Dict of Spotify curated playlist IDs -- playlist name is irrelevant
@@ -17,5 +17,5 @@ playlist_dict = {
     "37i9dQZF1DWY4xHQp97fN6": "Get Turnt",
     "37i9dQZF1DWTggY0yqBxES": "Alternative Hip Hop",
     "37i9dQZF1DX9oh43oAzkyx": "Beast Mode Hip Hop",
-    "37i9dQZF1DX186v583rmzp": "90s Hip Hop",
+    "37i9dQZF1DX186v583rmzp": "90s Hip Hop"
 }
