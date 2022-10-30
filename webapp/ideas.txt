@@ -8,7 +8,9 @@ Get two randomly artists from the database:
 
 Show their names and pictures (url in the database) side by side
     - click on picture = vote for artist
-    - hover on picture = play a preview_url (highest rank available)
+    - hover on picture = play a preview_url (highest rank available) 
+        - 50 out of 316 dont have any preview url in top 5 tracks
+        - including kanye, kendrick, cole...
 
 Below picture:
     - list top 5 tracks
