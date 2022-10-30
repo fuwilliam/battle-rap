@@ -13,6 +13,7 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True
 
 db = SQLAlchemy(app)
 
+
 class Rapper(db.Model):
     __tablename__ = "rappers"
     artist_id = db.Column(db.String, primary_key=True)
@@ -25,9 +26,6 @@ class Rapper(db.Model):
     flag_excl_genre = db.Column(db.Boolean)
     load_date = db.Column(db.DateTime)
 
-    def __repr__(self):
-        return f'<Artist {self.artist_name}>'
-
 class Tracks(db.Model):
     __tablename__ = "top_tracks"
     track_id = db.Column(db.String, primary_key=True)
@@ -38,9 +36,6 @@ class Tracks(db.Model):
     preview_url = db.Column(db.String)
     load_date = db.Column(db.DateTime)
 
-    def __repr__(self):
-        return f'<Artist {self.artist_name}>'
-
 @app.route("/")
 def index():
     rapper1 = (
@@ -48,49 +43,7 @@ def index():
             Rapper.flag_main_genre == True,
             Rapper.flag_excl_genre == False,
             Rapper.popularity >= 60,
-            Rapper.followers >= 100000
-        )
-        .order_by(func.random())
-        .first()
-    )
-    rapper2 = (
-        Rapper.query.filter(
-            Rapper.flag_main_genre == True,
-            Rapper.flag_excl_genre == False,
-            Rapper.popularity >= 60,
             Rapper.followers >= 100000,
-            Rapper.artist_id != rapper1.artist_id
-        )
-        .order_by(func.random())
-        .first()
-    )
-    tracks1 = (
-        Tracks.query.filter(
-            Tracks.artist_id == rapper1.artist_id,
-            Tracks.track_rank <= 5
-        )
-        .order_by(Tracks.track_rank)
-        .all()
-    )
-
-    tracks2 = (
-        Tracks.query.filter(
-            Tracks.artist_id == rapper2.artist_id,
-            Tracks.track_rank <= 5
-        )
-        .all()
-    )
-    return render_template("bootstrap.html", rapper1=rapper1, rapper2=rapper2, tracks1=tracks1, tracks2=tracks2)#rapper2.artist_name + ' vs ' + rapper1.artist_name
-
-@app.route("/quiz")
-def battle():
-    rapper1 = (
-        Rapper.query.filter(
-            Rapper.flag_main_genre == True,
-            Rapper.flag_excl_genre == False,
-            Rapper.popularity >= 60,
-            Rapper.followers >= 100000,
-            Rapper.artist_id == '4LLpKhyESsyAXpc4laK94U'
         )
         .order_by(func.random())
         .first()
@@ -102,12 +55,25 @@ def battle():
             Rapper.popularity >= 60,
             Rapper.followers >= 100000,
             Rapper.artist_id != rapper1.artist_id,
-            Rapper.artist_id == '1anyVhU62p31KFi8MEzkbf'
         )
         .order_by(func.random())
         .first()
     )
-    return render_template("bootstrap.html", rapper1=rapper1, rapper2=rapper2)
+    tracks1 = Tracks.query.filter(
+        Tracks.artist_id == rapper1.artist_id, Tracks.track_rank <= 3
+    ).all()
+
+    tracks2 = Tracks.query.filter(
+        Tracks.artist_id == rapper2.artist_id, Tracks.track_rank <= 3
+    ).all()
+    return render_template(
+        "bootstrap.html",
+        rapper1=rapper1,
+        rapper2=rapper2,
+        tracks1=tracks1,
+        tracks2=tracks2,
+    )
+
 
 @app.route("/ranking")
 def foobar():
