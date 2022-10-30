@@ -2,10 +2,10 @@
 
 # Dict of genres and number of artists to be returned.
 genre_dict = {
-    "rap": 150,
-    "hip hop": 150,
-    "alternative hip hop": 50,
-    "escape room": 50,
+    "rap": 130,
+    "hip hop": 130,
+    "alternative hip hop": 30,
+    "escape room": 30,
     "drill": 30,
     "grime": 20,
     "pluggnb": 20,

@@ -1,0 +1,54 @@
+{% extends 'bootstrap/base.html' %}
+
+{% block styles %}
+{{ super() }}
+	<style>
+		body { background: #6085a7; }
+	</style>
+{% endblock %}
+
+
+{% block title %}
+Rapper List
+{% endblock %}
+
+
+{% block content %}
+
+<div class="container">
+  <div class="row pb-5">
+    <div class="col-md-10 col-lg-8 mx-lg-auto mx-md-auto">
+
+      <h1 class="pt-5 pb-2">List of Rappers</h1>
+
+      <p class="lead alert alert-warning">Wow!</p>
+
+	  <!-- <p class="ml-4"><a href="{{ url_for('index') }}">Return to the index.</a></p> -->
+
+		<table class="table">
+			<tr>
+				<th>artist_id</th>
+				<th>artist_name</th>
+				<th>popularity</th>
+				<th>followers</th>
+				<th>genres</th>
+				<th>image_url</th>
+			</tr>
+
+			<!-- {% for rapper in rappers %} -->
+			<tr>
+				<td>{{ rapper1.artist_id }}</td>
+				<td>{{ rapper1.artist_name }}</td>
+				<td>{{ rapper1.popularity }}</td>
+				<td>{{ rapper1.followers }}</td>
+				<td>{{ rapper1.genres }}</td>
+				<td>{{ rapper1.image_url }}</td>
+			</tr>
+			<!-- {% endfor %} -->
+		</table>
+
+		</div>
+	</div>
+</div>
+
+{% endblock %}
