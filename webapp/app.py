@@ -76,5 +76,13 @@ def index():
 
 
 @app.route("/ranking")
-def foobar():
-    return "<h1>TBD</h1>"
+def ranking():
+    return render_template("ranking.html")
+
+@app.route("/visualize")
+def visualize():
+    return render_template("visualize.html")
+
+@app.route("/about")
+def about():
+    return render_template("about.html")

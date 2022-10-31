@@ -22,10 +22,10 @@
     display: block;
   }
   .navbar-brand{
-    padding: 0px 45px 0px 25px;
+    padding: 0px 35px 0px 25px;
   } 
   .nav-item{
-    transition: 0.3s;
+    /* transition: 0.3s; */
     padding: 0px 25px 0px 0px;
   }
   /* .nav-item:hover{
