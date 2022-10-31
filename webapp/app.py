@@ -67,7 +67,7 @@ def index():
         Tracks.artist_id == rapper2.artist_id, Tracks.track_rank <= 3
     ).all()
     return render_template(
-        "bootstrap.html",
+        "voting.html",
         rapper1=rapper1,
         rapper2=rapper2,
         tracks1=tracks1,
