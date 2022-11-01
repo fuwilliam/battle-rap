@@ -54,7 +54,7 @@
         <script>
             new gridjs.Grid({
                 columns: [
-                    { id: 'rank', name: 'Rank', sort: false, width: '100px' },
+                    { id: 'rank', name: 'Rank', width: '100px' },
                     { id: 'name', name: 'Artist', width: '240px' },
                     { id: 'popularity', name: 'Popularity', width: '150px' },
                     { id: 'followers', name: 'Followers', width: '150px' },
@@ -65,13 +65,13 @@
                 data: [
                     {% for artist in artists %}
                       {
-                    rank: '{{ loop.index }}',
-                    name: '{{ artist.artist_name }}',
-                    popularity: '{{ artist.popularity }}',
-                    followers: '{{ artist.followers }}',
-                    wins: '{{ artist.wins }}',
-                    losses: '{{ artist.losses }}',
-                    win_rate: '{{ ' % 0.3f'|format(artist.win_rate|float) }}'
+                        rank: {{ loop.index }},
+                        name: '{{ artist.artist_name }}',
+                        popularity: {{ artist.popularity }},
+                        followers: {{ artist.followers }},
+                        wins: {{ artist.wins }},
+                        losses: {{ artist.losses }},
+                        win_rate: {{ ' % 0.3f'|format(artist.win_rate|float) }}
                       },
                 {% endfor %}
                   ],
