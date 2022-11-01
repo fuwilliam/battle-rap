@@ -16,7 +16,8 @@ SELECT
 FROM {{ ref('rappers') }}
 WHERE is_valid_genre = TRUE
 AND is_excluded_genre = FALSE
-AND popularity > 60
+AND is_latin_genre = FALSE
+AND popularity > 70
 AND followers > 100000
 
 {% if is_incremental() %}

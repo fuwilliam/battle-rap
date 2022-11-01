@@ -31,6 +31,10 @@ models:
         description: "Flags if the artist's genres contain any of the (arbitrary) non-rap genres and don't contain \"hip hop\""
         tests:
           - not_null
+      - name: is_latin_genre
+        description: "Checks for latin/mexican/argentine hip hop artists"
+        tests:
+          - not_null
       - name: image_url
         description: "URL for the artist's profile picture on Spotify"
       - name: load_date

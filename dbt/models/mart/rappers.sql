@@ -15,6 +15,7 @@ genres AS (
         ARRAY_TO_STRING(genre_array, ", ") AS genres,
         REGEXP_CONTAINS(ARRAY_TO_STRING(genre_array, ", "), "rap|hip hop|drill|grime|pluggnb|escape room") AS is_valid_genre,
         REGEXP_CONTAINS(ARRAY_TO_STRING(genre_array, ", "), "rap rock|rap metal|reggaeton|hyperpop|electropop") AND NOT REGEXP_CONTAINS(ARRAY_TO_STRING(genre_array, ", "), "hip hop") AS is_excluded_genre
+        REGEXP_CONTAINS(ARRAY_TO_STRING(genre_array, ", "), "latin|argentin|mexican hip hop") AS is_latin_genre,
     FROM {{ ref('stg_genres') }}
 )
 
@@ -26,6 +27,7 @@ SELECT
     g.genres,
     g.is_valid_genre,
     g.is_excluded_genre,
+    g.is_latin_genre,
     r.image_url,
     r.load_date
 FROM rappers AS r
