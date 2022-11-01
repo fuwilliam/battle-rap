@@ -45,7 +45,30 @@
     <div class="container">
         <div class="row justify-content-around" style="font-family:Poppins">
             <div class="col text-center">
-                <h1>TBD</strong></h5>
+              <table class="table">
+                <thead>
+                    <tr>
+                        <th>Artist</th>
+                        <th>Popularity</th>
+                        <th>Followers</th>
+                        <th>Wins</th>
+                        <th>Losses</th>
+                        <th>Win Rate</th>
+                    <tr>
+                </thead>
+                <tbody>
+                    {% for artist in artists %}
+                    <tr>
+                        <td>{{ artist.artist_name }}</td>
+                        <td>{{ artist.popularity }}</td>
+                        <td>{{ artist.followers }}</td>
+                        <td>{{ artist.wins }}</td>
+                        <td>{{ artist.losses }}</td>
+                        <td>{{ artist.win_rate }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
             </div>
     </div>
 

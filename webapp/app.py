@@ -30,6 +30,7 @@ class Rapper(db.Model):
     image_url = db.Column(db.String)
     flag_main_genre = db.Column(db.Boolean)
     flag_excl_genre = db.Column(db.Boolean)
+    flag_latin_genre = db.Column(db.Boolean)
     load_date = db.Column(db.DateTime)
 
 
@@ -57,62 +58,17 @@ class Results(db.Model):
         self.loser_id = loser_id
         self.voted_at = voted_at
 
+class Ranking(db.Model):
+    __tablename__ = "web_rank"
+    artist_id = db.Column(db.String, primary_key=True)
+    artist_name = db.Column(db.String)
+    popularity = db.Column(db.Integer)
+    followers = db.Column(db.Integer)
+    wins = db.Column(db.Integer)
+    losses = db.Column(db.Integer)
+    win_rate = db.Column(db.Float)
 
-@app.route("/")
-def index():
-    rapper1 = (
-        Rapper.query.filter(
-            Rapper.flag_main_genre == True,
-            Rapper.flag_excl_genre == False,
-            Rapper.popularity >= 60,
-            Rapper.followers >= 100000,
-        )
-        .order_by(func.random())
-        .first()
-    )
-    rapper2 = (
-        Rapper.query.filter(
-            Rapper.flag_main_genre == True,
-            Rapper.flag_excl_genre == False,
-            Rapper.popularity >= 60,
-            Rapper.followers >= 100000,
-            Rapper.artist_id != rapper1.artist_id,
-        )
-        .order_by(func.random())
-        .first()
-    )
-    tracks1 = Tracks.query.filter(
-        Tracks.artist_id == rapper1.artist_id, Tracks.track_rank <= 3
-    ).all()
-
-    tracks2 = Tracks.query.filter(
-        Tracks.artist_id == rapper2.artist_id, Tracks.track_rank <= 3
-    ).all()
-    return render_template(
-        "voting.html",
-        rapper1=rapper1,
-        rapper2=rapper2,
-        tracks1=tracks1,
-        tracks2=tracks2,
-    )
-
-
-@app.route("/ranking")
-def ranking():
-    return render_template("ranking.html")
-
-
-@app.route("/visualize")
-def visualize():
-    return render_template("visualize.html")
-
-
-@app.route("/about")
-def about():
-    return render_template("about.html")
-
-
-@app.route("/vote", methods=["GET", "POST"])
+@app.route("/", methods=["GET", "POST"])
 def vote():
     if request.method == "POST":
         matchup_id = uuid.uuid4()
@@ -133,7 +89,8 @@ def vote():
         Rapper.query.filter(
             Rapper.flag_main_genre == True,
             Rapper.flag_excl_genre == False,
-            Rapper.popularity >= 80,
+            Rapper.flag_latin_genre == False,
+            Rapper.popularity >= 70,
             Rapper.followers >= 100000,
         )
         .order_by(func.random())
@@ -143,7 +100,8 @@ def vote():
         Rapper.query.filter(
             Rapper.flag_main_genre == True,
             Rapper.flag_excl_genre == False,
-            Rapper.popularity >= 80,
+            Rapper.flag_latin_genre == False,
+            Rapper.popularity >= 70,
             Rapper.followers >= 100000,
             Rapper.artist_id != rapper1.artist_id,
         )
@@ -159,7 +117,82 @@ def vote():
     ).all()
 
     return render_template(
-        "testvote.html",
+        "vote.html",
+        rapper1=rapper1,
+        rapper2=rapper2,
+        tracks1=tracks1,
+        tracks2=tracks2,
+    )
+
+
+@app.route("/ranking")
+def ranking():
+
+    artist_rank = Ranking.query.all()
+
+    return render_template("ranking.html", artists=artist_rank)
+
+
+@app.route("/visualize")
+def visualize():
+    return render_template("visualize.html")
+
+
+@app.route("/about")
+def about():
+    return render_template("about.html")
+
+
+@app.route("/vote", methods=["GET", "POST"])
+def vote2():
+    if request.method == "POST":
+        matchup_id = uuid.uuid4()
+        voted_at = datetime.now()
+
+        if request.form.get("vote1"):
+            winner_id, loser_id = request.form.get("vote1").split("_")
+            record = Results(matchup_id, winner_id, loser_id, voted_at)
+            db.session.add(record)
+            db.session.commit()
+        elif request.form.get("vote2"):
+            winner_id, loser_id = request.form.get("vote2").split("_")
+            record = Results(matchup_id, winner_id, loser_id, voted_at)
+            db.session.add(record)
+            db.session.commit()
+
+    rapper1 = (
+        Rapper.query.filter(
+            Rapper.flag_main_genre == True,
+            Rapper.flag_excl_genre == False,
+            Rapper.flag_latin_genre == False,
+            Rapper.popularity >= 70,
+            Rapper.followers >= 100000,
+        )
+        .order_by(func.random())
+        .first()
+    )
+    rapper2 = (
+        Rapper.query.filter(
+            Rapper.flag_main_genre == True,
+            Rapper.flag_excl_genre == False,
+            Rapper.flag_latin_genre == False,
+            Rapper.popularity >= 70,
+            Rapper.followers >= 100000,
+            Rapper.artist_id != rapper1.artist_id,
+        )
+        .order_by(func.random())
+        .first()
+    )
+    tracks1 = Tracks.query.filter(
+        Tracks.artist_id == rapper1.artist_id, Tracks.track_rank <= 3
+    ).all()
+
+    tracks2 = Tracks.query.filter(
+        Tracks.artist_id == rapper2.artist_id, Tracks.track_rank <= 3
+    ).all()
+
+    return render_template(
+        "vote.html",
         rapper1=rapper1,
         rapper2=rapper2,
         tracks1=tracks1,
