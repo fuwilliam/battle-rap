@@ -1,3 +1,8 @@
+import os
+from dotenv import load_dotenv
+from datetime import datetime
+import uuid
+
 from flask import Flask, render_template, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_bootstrap import Bootstrap
@@ -6,9 +11,10 @@ from sqlalchemy.sql.expression import func
 app = Flask(__name__)
 Bootstrap(app)
 
-app.config[
-    "SQLALCHEMY_DATABASE_URI"
-] = "postgresql://airflow:airflow@127.0.0.1:5555/battle-rap"
+load_dotenv()
+sqlalchemy_conn = os.getenv("POSTGRES_CONN")
+
+app.config["SQLALCHEMY_DATABASE_URI"] = sqlalchemy_conn
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True
 
 db = SQLAlchemy(app)
@@ -35,6 +41,21 @@ class Tracks(db.Model):
     track_url = db.Column(db.String)
     preview_url = db.Column(db.String)
     load_date = db.Column(db.DateTime)
+
+class Results(db.Model):
+    __tablename__ = "results"
+    matchup_id = db.Column(db.String, primary_key=True)
+    artist1_id = db.Column(db.String)
+    artist2_id = db.Column(db.String)
+    winner_id = db.Column(db.String)
+    voted_at = db.Column(db.DateTime)
+
+    def __init__(self, matchup_id, artist1_id, artist2_id, winner_id, voted_at):
+        self.matchup_id = matchup_id
+        self.artist1_id = artist1_id
+        self.artist2_id = artist2_id
+        self.winner_id = winner_id
+        self.voted_at = voted_at
 
 @app.route("/")
 def index():
@@ -74,7 +95,6 @@ def index():
         tracks2=tracks2,
     )
 
-
 @app.route("/ranking")
 def ranking():
     return render_template("ranking.html")
@@ -86,3 +106,60 @@ def visualize():
 @app.route("/about")
 def about():
     return render_template("about.html")
+
+@app.route("/vote", methods=["GET", "POST"])
+def votelmao():
+    if request.method == 'POST':
+
+        matchup_id = uuid.uuid4()
+        voted_at = datetime.now()
+
+        if request.form.get('vote1'):
+            artist1_id, artist2_id = request.form.get('vote1').split('_')
+            winner_id = artist1_id
+            record = Results(matchup_id, artist1_id, artist2_id, winner_id, voted_at)
+            db.session.add(record)
+            db.session.commit()
+        elif request.form.get('vote2'):
+            artist2_id, artist1_id = request.form.get('vote2').split('_')
+            winner_id = artist2_id
+            record = Results(matchup_id, artist1_id, artist2_id, winner_id, voted_at)
+            db.session.add(record)
+            db.session.commit()
+
+    rapper1 = (
+        Rapper.query.filter(
+            Rapper.flag_main_genre == True,
+            Rapper.flag_excl_genre == False,
+            Rapper.popularity >= 60,
+            Rapper.followers >= 100000,
+        )
+        .order_by(func.random())
+        .first()
+    )
+    rapper2 = (
+        Rapper.query.filter(
+            Rapper.flag_main_genre == True,
+            Rapper.flag_excl_genre == False,
+            Rapper.popularity >= 60,
+            Rapper.followers >= 100000,
+            Rapper.artist_id != rapper1.artist_id,
+        )
+        .order_by(func.random())
+        .first()
+    )
+    tracks1 = Tracks.query.filter(
+        Tracks.artist_id == rapper1.artist_id, Tracks.track_rank <= 3
+    ).all()
+
+    tracks2 = Tracks.query.filter(
+        Tracks.artist_id == rapper2.artist_id, Tracks.track_rank <= 3
+    ).all()
+
+    return render_template(
+        "testvote.html",
+        rapper1=rapper1,
+        rapper2=rapper2,
+        tracks1=tracks1,
+        tracks2=tracks2,
+    )
