@@ -73,6 +73,6 @@ class ArtistLister(SpotifyAPI):
                 tracks_dict["track_rank"].append(j + 1)
                 tracks_dict["track_name"].append(payload[j]["name"])
                 tracks_dict["track_id"].append(payload[j]["id"])
-                tracks_dict["track_url"].append(payload[j]["external_urls"]["spotify"])
+                tracks_dict["track_url"].append(f'https://open.spotify.com/embed/track/{payload[j]["id"]}?utm_source=generator')
                 tracks_dict["preview_url"].append(payload[j]["preview_url"])
         return tracks_dict
