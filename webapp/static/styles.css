@@ -22,4 +22,7 @@
     /* transition: 0.3s; */
     padding: 0px 25px 0px 0px;
   }
- 
+
+  .gridjs-table{
+    min-width: 100%;
+}
