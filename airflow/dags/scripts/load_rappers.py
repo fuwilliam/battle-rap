@@ -14,7 +14,7 @@ load_dotenv(os.path.join(path_env, ".env"))
 
 client_id = os.getenv("SPOTIFY_CLIENT_ID")
 client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
-sqlalchemy_conn = os.getenv("POSTGRES_CONN")
+sqlalchemy_conn = os.getenv("POSTGRES_CONN") #'postgresql://airflow:airflow@127.0.0.1:5555/battle-rap'
 
 genre_dict = scripts.spotify_dicts.genre_dict
 playlist_dict = scripts.spotify_dicts.playlist_dict
@@ -63,7 +63,8 @@ def create_db_engine(conn_str):
 def load_to_db(df_rappers, df_top_tracks, engine):
     start_time = time.perf_counter()
     print("Loading raw dataframes to DW...")
-    df_rappers.to_sql("rappers", engine, if_exists="replace", index=False)
+    engine.execute("TRUNCATE TABLE rappers")
+    df_rappers.to_sql("rappers", engine, if_exists="append", index=False)
     df_top_tracks.to_sql("top_tracks", engine, if_exists="replace", index=False)
     duration = time.perf_counter() - start_time
     print(f"Loaded in {duration:.2f} seconds")

@@ -123,73 +123,19 @@ def vote():
         tracks1=tracks1,
         tracks2=tracks2,
     )
-
+    
+@app.route("/about")
+def about():
+    return render_template("about.html")
 
 @app.route("/ranking")
 def ranking():
-    artist_rank = Ranking.query.all()
-    return render_template("ranking_gridjs.html", artists=artist_rank)
+    artists_ranked = Ranking.query.all()
+    return render_template("ranking.html", artists=artists_ranked)
 
 @app.route("/visualize")
 def visualize():
     return render_template("visualize.html")
 
-@app.route("/about")
-def about():
-    return render_template("about.html")
 
-# @app.route("/vote", methods=["GET", "POST"])
-# def vote2():
-#     if request.method == "POST":
-#         matchup_id = uuid.uuid4()
-#         voted_at = datetime.now()
 
-#         if request.form.get("vote1"):
-#             winner_id, loser_id = request.form.get("vote1").split("_")
-#             record = Results(matchup_id, winner_id, loser_id, voted_at)
-#             db.session.add(record)
-#             db.session.commit()
-#         elif request.form.get("vote2"):
-#             winner_id, loser_id = request.form.get("vote2").split("_")
-#             record = Results(matchup_id, winner_id, loser_id, voted_at)
-#             db.session.add(record)
-#             db.session.commit()
-
-#     rapper1 = (
-#         Rapper.query.filter(
-#             Rapper.flag_main_genre == True,
-#             Rapper.flag_excl_genre == False,
-#             Rapper.flag_latin_genre == False,
-#             Rapper.popularity >= 70,
-#             Rapper.followers >= 100000,
-#         )
-#         .order_by(func.random())
-#         .first()
-#     )
-#     rapper2 = (
-#         Rapper.query.filter(
-#             Rapper.flag_main_genre == True,
-#             Rapper.flag_excl_genre == False,
-#             Rapper.flag_latin_genre == False,
-#             Rapper.popularity >= 70,
-#             Rapper.followers >= 100000,
-#             Rapper.artist_id != rapper1.artist_id,
-#         )
-#         .order_by(func.random())
-#         .first()
-#     )
-#     tracks1 = Tracks.query.filter(
-#         Tracks.artist_id == rapper1.artist_id, Tracks.track_rank <= 3
-#     ).all()
-
-#     tracks2 = Tracks.query.filter(
-#         Tracks.artist_id == rapper2.artist_id, Tracks.track_rank <= 3
-#     ).all()
-
-#     return render_template(
-#         "vote.html",
-#         rapper1=rapper1,
-#         rapper2=rapper2,
-#         tracks1=tracks1,
-#         tracks2=tracks2,
-#     )
