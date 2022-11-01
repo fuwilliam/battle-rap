@@ -32,6 +32,7 @@ class Rapper(db.Model):
     flag_excl_genre = db.Column(db.Boolean)
     load_date = db.Column(db.DateTime)
 
+
 class Tracks(db.Model):
     __tablename__ = "top_tracks"
     track_id = db.Column(db.String, primary_key=True)
@@ -42,20 +43,20 @@ class Tracks(db.Model):
     preview_url = db.Column(db.String)
     load_date = db.Column(db.DateTime)
 
+
 class Results(db.Model):
     __tablename__ = "results"
     matchup_id = db.Column(db.String, primary_key=True)
-    artist1_id = db.Column(db.String)
-    artist2_id = db.Column(db.String)
     winner_id = db.Column(db.String)
+    loser_id = db.Column(db.String)
     voted_at = db.Column(db.DateTime)
 
-    def __init__(self, matchup_id, artist1_id, artist2_id, winner_id, voted_at):
+    def __init__(self, matchup_id, winner_id, loser_id, voted_at):
         self.matchup_id = matchup_id
-        self.artist1_id = artist1_id
-        self.artist2_id = artist2_id
         self.winner_id = winner_id
+        self.loser_id = loser_id
         self.voted_at = voted_at
+
 
 @app.route("/")
 def index():
@@ -95,35 +96,36 @@ def index():
         tracks2=tracks2,
     )
 
+
 @app.route("/ranking")
 def ranking():
     return render_template("ranking.html")
+
 
 @app.route("/visualize")
 def visualize():
     return render_template("visualize.html")
 
+
 @app.route("/about")
 def about():
     return render_template("about.html")
 
-@app.route("/vote", methods=["GET", "POST"])
-def votelmao():
-    if request.method == 'POST':
 
+@app.route("/vote", methods=["GET", "POST"])
+def vote():
+    if request.method == "POST":
         matchup_id = uuid.uuid4()
         voted_at = datetime.now()
 
-        if request.form.get('vote1'):
-            artist1_id, artist2_id = request.form.get('vote1').split('_')
-            winner_id = artist1_id
-            record = Results(matchup_id, artist1_id, artist2_id, winner_id, voted_at)
+        if request.form.get("vote1"):
+            winner_id, loser_id = request.form.get("vote1").split("_")
+            record = Results(matchup_id, winner_id, loser_id, voted_at)
             db.session.add(record)
             db.session.commit()
-        elif request.form.get('vote2'):
-            artist2_id, artist1_id = request.form.get('vote2').split('_')
-            winner_id = artist2_id
-            record = Results(matchup_id, artist1_id, artist2_id, winner_id, voted_at)
+        elif request.form.get("vote2"):
+            winner_id, loser_id = request.form.get("vote2").split("_")
+            record = Results(matchup_id, winner_id, loser_id, voted_at)
             db.session.add(record)
             db.session.commit()
 
@@ -131,7 +133,7 @@ def votelmao():
         Rapper.query.filter(
             Rapper.flag_main_genre == True,
             Rapper.flag_excl_genre == False,
-            Rapper.popularity >= 60,
+            Rapper.popularity >= 80,
             Rapper.followers >= 100000,
         )
         .order_by(func.random())
@@ -141,7 +143,7 @@ def votelmao():
         Rapper.query.filter(
             Rapper.flag_main_genre == True,
             Rapper.flag_excl_genre == False,
-            Rapper.popularity >= 60,
+            Rapper.popularity >= 80,
             Rapper.followers >= 100000,
             Rapper.artist_id != rapper1.artist_id,
         )

@@ -1,13 +1,4 @@
 
-  /* .row {
-    width: 100%;
-    height: 480px;
-    vertical-align: middle;
-    padding: 0 10px;
-    background: #fff;
-    border: 1px solid rgb(88, 86, 86);
-    margin: 1px;
-  } */
   .col {
     padding-top: 5px;
     padding-bottom: 0px;
@@ -16,11 +7,14 @@
     height: 420px;
     padding: 0;
     margin: 0;
+    align-items: center;
+    text-align: center;
   }
-  .col-5 img {
+  /* .col-5 img {
     margin: auto;
     display: block;
-  }
+  } */
+
   .navbar-brand{
     padding: 0px 35px 0px 25px;
   } 
@@ -28,16 +22,4 @@
     /* transition: 0.3s; */
     padding: 0px 25px 0px 0px;
   }
-  /* .nav-item:hover{
-    color: rgb(39, 128, 36);
-  } */
-
-  /* .navbar-nav > li{
-    padding-left:5px;
-    padding-right:5px;
-  }
-
-  .navbar-nav > li{
-    margin-left:15px;
-    margin-right:15px;
-  } */
+ 
