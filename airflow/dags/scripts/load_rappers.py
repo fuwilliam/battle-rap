@@ -14,7 +14,7 @@ load_dotenv(os.path.join(path_env, ".env"))
 
 client_id = os.getenv("SPOTIFY_CLIENT_ID")
 client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
-sqlalchemy_conn = os.getenv("POSTGRES_CONN") #'postgresql://airflow:airflow@127.0.0.1:5555/battle-rap'
+sqlalchemy_conn = os.getenv("SUPABASE_URI")#os.getenv("POSTGRES_CONN") #'postgresql://airflow:airflow@127.0.0.1:5555/battle-rap'
 
 genre_dict = scripts.spotify_dicts.genre_dict
 playlist_dict = scripts.spotify_dicts.playlist_dict

@@ -6,7 +6,7 @@ __pycache__/
 *test.py
 .env
 *.env
-
+*.log
 airflow/logs/
 airflow/dags/scripts/__pycache__/
 airflow/dags/__pycache__/

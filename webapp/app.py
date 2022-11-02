@@ -12,7 +12,7 @@ app = Flask(__name__)
 Bootstrap(app)
 
 load_dotenv()
-sqlalchemy_conn = os.getenv("POSTGRES_CONN")
+sqlalchemy_conn = os.getenv("SUPABASE_URI")#os.getenv("POSTGRES_CONN")
 
 app.config["SQLALCHEMY_DATABASE_URI"] = sqlalchemy_conn
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True
@@ -59,7 +59,7 @@ class Results(db.Model):
         self.voted_at = voted_at
 
 class Ranking(db.Model):
-    __tablename__ = "web_rank"
+    __tablename__ = "rankings"
     artist_id = db.Column(db.String, primary_key=True)
     artist_name = db.Column(db.String)
     popularity = db.Column(db.Integer)
