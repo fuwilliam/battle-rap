@@ -71,7 +71,7 @@
                         followers: {{ artist.followers }},
                         wins: {{ artist.wins }},
                         losses: {{ artist.losses }},
-                        win_rate: {{ ' % 0.3f'|format(artist.win_rate|float) }}
+                        win_rate: '{{ ' % 0.3f'|format(artist.win_rate|float) }}'
                       },
                 {% endfor %}
                   ],
