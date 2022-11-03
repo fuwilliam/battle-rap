@@ -19,7 +19,7 @@ Summary:
 7. Staging and mart models are built, tested and documented with [dbt](https://www.getdbt.com)
 8. Models are loaded from BigQuery to a [Power BI](https://powerbi.microsoft.com/) dashboard
 
-[Airflow](https://airflow.apache.org/) (ran locally with [Docker](https://www.docker.com/)) orchestrates steps 1-2 and 5-7.
+[Airflow](https://airflow.apache.org/) (ran locally with [Docker](https://www.docker.com/)) orchestrates steps 1-2 and 5-8.
 
 ## Dashboard
 
