@@ -10,6 +10,7 @@ from datetime import datetime
 from scripts.load_rappers import main
 
 POSTGRES_CONN_ID = Variable.get('POSTGRES_CONN_ID')
+SUPABASE_CONN_ID = Variable.get('SUPABASE_CONN_ID')
 FILE_FORMAT = Variable.get('FILE_FORMAT')
 GCS_BUCKET = Variable.get('GCS_BUCKET')
 GCP_CONN_ID = Variable.get('GCP_CONN_ID')
@@ -46,7 +47,7 @@ with DAG(
     load_rappers_gcs_task = PostgresToGCSOperator(
         task_id=f'load_rappers_to_gcs',
         gcp_conn_id=GCP_CONN_ID,
-        postgres_conn_id=POSTGRES_CONN_ID,
+        postgres_conn_id=SUPABASE_CONN_ID,
         sql=f'SELECT * FROM rappers;',
         bucket=GCS_BUCKET,
         filename=f'rappers/rappers.{FILE_FORMAT}',
@@ -58,7 +59,7 @@ with DAG(
     load_tracks_gcs_task = PostgresToGCSOperator(
         task_id=f'load_tracks_to_gcs',
         gcp_conn_id=GCP_CONN_ID,
-        postgres_conn_id=POSTGRES_CONN_ID,
+        postgres_conn_id=SUPABASE_CONN_ID,
         sql=f'SELECT * FROM top_tracks;',
         bucket=GCS_BUCKET,
         filename=f'top_tracks/top_tracks.{FILE_FORMAT}',

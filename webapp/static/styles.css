@@ -1,4 +1,11 @@
-
+@font-face{
+  font-family: Poppins;
+  src: url('Poppins-Regular.ttf');
+}
+  body {
+    font-family: Poppins;
+    padding-bottom: 60px;
+  }
   .col {
     padding-top: 5px;
     padding-bottom: 0px;
@@ -14,9 +21,8 @@
     margin: auto;
     display: block;
   } */
-
   .navbar-brand{
-    padding: 0px 35px 0px 25px;
+    padding: 0px 35px 0px 35px;
   } 
   .nav-item{
     /* transition: 0.3s; */
