@@ -6,7 +6,7 @@ A project built to answer the quintessential question: who is the greatest rappe
 
 ## Architecture
 
-![Architecture](https://github.com/fuwilliam/battle-rap/blob/main/images/architecture.png)
+![Architecture](https://github.com/fuwilliam/battle-rap/blob/main/images/architecture_zoom.png)
 
 Summary:
 
@@ -28,6 +28,8 @@ View live @ [battlerap.app/visualize](https://battlerap.app/visualize)
 ## Ideas for the future
 
 - Play song snippet when hovering on artist picture
+- Create a bracket mode (March Madness style) to force user into "harder" choices and crown a champion
 - Login to see your personal ranking
 - Elo rating or MaxDiff to rank artists
-- Create a bracket mode (March Madness style) to force user into "harder" choices and crown a champion
+- Popularity filter to narrow down matchup possibilities for user
+
