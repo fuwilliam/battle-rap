@@ -6,7 +6,7 @@ A project built to answer the quintessential question: who is the greatest rappe
 
 ## Architecture
 
-![Architecture](https://github.com/fuwilliam/battle-rap/blob/main/images/architecture.jpg)
+![Architecture](https://github.com/fuwilliam/battle-rap/blob/main/images/architecture.png)
 
 ## Dashboard
 
