@@ -1,4 +1,4 @@
-# [Battle Rap](https://battle-rap-365403.appspot.com/)
+# [battlerap.app](https://battlerap.app)
 
 A project built to answer the quintessential question: who is the greatest rapper?
 
