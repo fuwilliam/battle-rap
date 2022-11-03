@@ -19,7 +19,7 @@ Summary:
 7. Staging and mart models are built, tested and documented with [dbt](https://www.getdbt.com)
 8. Models are loaded from BigQuery to a [Power BI](https://powerbi.microsoft.com/) dashboard
 
-[Airflow](https://airflow.apache.org/) (ran locally with [Docker](https://www.docker.com/)) orchestrates steps 1-2 and 5-8.
+[Airflow](https://airflow.apache.org/) (ran locally with [Docker](https://www.docker.com/)) orchestrates steps 1-2 and 5-7.
 
 ## Dashboard
 View live @ [battlerap.app/visualize](https://battlerap.app/visualize)
@@ -30,4 +30,4 @@ View live @ [battlerap.app/visualize](https://battlerap.app/visualize)
 - Play song snippet when hovering on artist picture
 - Login to see your personal ranking
 - Elo rating or MaxDiff to rank artists
-- Create a bracket mode (March Madness style) to have "champions"
+- Create a bracket mode (March Madness style) to force user into "harder" choices and crown a champion
