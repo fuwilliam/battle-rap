@@ -14,10 +14,12 @@ Summary:
 2. Load data to a [Supabase](https://supabase.com/) Postgres database with `SQLAlchemy`
 3. Artist & track data is served to the [web app](https://battle-rap-365403.appspot.com/) (with `Flask` / `SQLAlchemy`), where the user makes their picks
 4. Matchup results are written back to Supabase
-4. Raw artist, track and matchup data is loaded to [GCS](https://cloud.google.com/storage)
-5. Data is loaded from GCS to [BigQuery](https://cloud.google.com/bigquery)
-6. Staging and mart models are built, tested and documented with [dbt](https://www.getdbt.com)
-7. Models are loaded from BigQuery to a [Power BI](https://powerbi.microsoft.com/) dashboard
+5. Raw artist, track and matchup data is loaded to [GCS](https://cloud.google.com/storage)
+6. Data is loaded from GCS to [BigQuery](https://cloud.google.com/bigquery)
+7. Staging and mart models are built, tested and documented with [dbt](https://www.getdbt.com)
+8. Models are loaded from BigQuery to a [Power BI](https://powerbi.microsoft.com/) dashboard
+
+[Airflow](https://airflow.apache.org/) (ran locally with [Docker](https://www.docker.com/)) orchestrates steps 1-2 and 5-7.
 
 ## Dashboard
 
