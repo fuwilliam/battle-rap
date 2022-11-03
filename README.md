@@ -22,8 +22,8 @@ Summary:
 [Airflow](https://airflow.apache.org/) (ran locally with [Docker](https://www.docker.com/)) orchestrates steps 1-2 and 5-8.
 
 ## Dashboard
+View live @ [battlerap.app/visualize](https://battlerap.app/visualize)
 
-![Dashboard]()
 
 ## Ideas for the future
 
