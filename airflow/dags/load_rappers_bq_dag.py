@@ -1,5 +1,4 @@
 from airflow import DAG
-from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import PythonOperator
 from airflow.providers.google.cloud.transfers.postgres_to_gcs import PostgresToGCSOperator
 from airflow.providers.google.cloud.transfers.gcs_to_bigquery import GCSToBigQueryOperator
@@ -35,10 +34,6 @@ with DAG(
     default_args=default_args
 ) as dag:
 
-    empty = EmptyOperator(
-        task_id='empty'
-    )
-
     load_rappers_task = PythonOperator(
         task_id='load_rappers',
         python_callable=main
@@ -63,6 +58,18 @@ with DAG(
         sql=f'SELECT * FROM top_tracks;',
         bucket=GCS_BUCKET,
         filename=f'top_tracks/top_tracks.{FILE_FORMAT}',
+        export_format=f'{FILE_FORMAT}',
+        gzip=False,
+        use_server_side_cursor=False
+    )
+
+    load_results_gcs_task = PostgresToGCSOperator(
+        task_id=f'load_results_to_gcs',
+        gcp_conn_id=GCP_CONN_ID,
+        postgres_conn_id=SUPABASE_CONN_ID,
+        sql=f'SELECT * FROM results;',
+        bucket=GCS_BUCKET,
+        filename=f'results/results.{FILE_FORMAT}',
         export_format=f'{FILE_FORMAT}',
         gzip=False,
         use_server_side_cursor=False
@@ -96,6 +103,20 @@ with DAG(
         skip_leading_rows=1
     )
 
+    load_results_bq_task = GCSToBigQueryOperator(
+        task_id=f'load_results_to_bq',
+        gcp_conn_id=GCP_CONN_ID,
+        bucket=GCS_BUCKET,
+        source_objects=[f'results/results.csv'],
+        destination_project_dataset_table='.'.join(
+            [BQ_PROJECT, BQ_DS, 'results']
+        ),
+        create_disposition='CREATE_IF_NEEDED',
+        write_disposition='WRITE_TRUNCATE',
+        autodetect=True,
+        skip_leading_rows=1
+    )
+
     trigger_dbt_cloud_job = DbtCloudRunJobOperator(
         task_id="trigger_dbt_cloud_job",
         dbt_cloud_conn_id=DBT_CONN_ID,
@@ -105,6 +126,6 @@ with DAG(
         timeout=120
     )
 
-load_rappers_task >> [load_rappers_gcs_task, load_tracks_gcs_task] >> empty
-empty >> [load_rappers_bq_task, load_tracks_bq_task] >> trigger_dbt_cloud_job
+load_rappers_task >> [load_rappers_gcs_task, load_tracks_gcs_task] >> load_results_gcs_task
+load_results_gcs_task >> [load_rappers_bq_task, load_tracks_bq_task] >> load_results_bq_task >> trigger_dbt_cloud_job
 #chain(load_rappers_task, [load_rappers_gcs_task, load_tracks_gcs_task], [load_rappers_bq_task, load_tracks_bq_task], trigger_dbt_cloud_job)
