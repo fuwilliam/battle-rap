@@ -2,10 +2,11 @@ version: 2
 
 sources:
   - name: raw
-    description: "Sourced from Spotify API > Postgres > GCS > BQ"
+    description: "Sourced from Spotify API > Postgres (Supabase) > GCS > BQ"
     tables:
       - name: rappers
       - name: top_tracks
+      - name: results
           
 models:
   - name: stg_genres
@@ -73,5 +74,26 @@ models:
         description: "URL for a short snippet/preview of the track - often not available"
       - name: load_date
         description: "Timestamp for when the record was initially loaded to Postgres from Spotify's API"
+        tests:
+          - not_null
+
+  - name: stg_results
+    description: "Basically casting voted_at to proper timestamp format"
+    columns:
+      - name: matchup_id
+        description: "UUID for each matchup voted at battlerap.app"
+        tests:
+          - unique
+          - not_null
+      - name: winner_id
+        description: "artist_id of the winner of the matchup"
+        tests:
+          - not_null
+      - name: loser_id
+        description: "artist_id of the loser of the matchup"
+        tests:
+          - not_null
+      - name: voted_at
+        description: "Timestamp of when the matchup occurred"
         tests:
           - not_null
