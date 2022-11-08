@@ -103,3 +103,28 @@ models:
         description: "Timestamp for when the record was initially loaded to Postgres from Spotify's API"
         tests:
           - not_null
+  
+  - name: standings
+    description: "Simple win/loss compilation for the artists battling"
+    columns:
+      - name: artist_id
+        description: "Spotify's artist_id identifier"
+        tests:
+          - unique
+          - not_null
+      - name: artist_name
+        description: "The artist's name"
+        tests:
+          - not_null
+      - name: wins
+        description: "Sum of matchups won by artist"
+        tests:
+          - not_null
+      - name: losses
+        description: "Sum of matchups lost by artist"
+        tests:
+          - not_null
+      - name: win_rate
+        description: "Wins divided by (wins+losses)"
+        tests:
+          - not_null
