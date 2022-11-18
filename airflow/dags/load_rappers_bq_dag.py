@@ -70,17 +70,13 @@ with DAG(
             skip_leading_rows=1
         )
 
-    # trigger_dbt_cloud_job = DbtCloudRunJobOperator(
-    #     task_id="trigger_dbt_cloud_job",
-    #     dbt_cloud_conn_id=DBT_CONN_ID,
-    #     account_id=DBT_ACCOUNT_ID,
-    #     job_id=DBT_JOB_ID,
-    #     check_interval=10,
-    #     timeout=120
-    # )
+    trigger_dbt_cloud_job = DbtCloudRunJobOperator(
+        task_id="trigger_dbt_cloud_job",
+        dbt_cloud_conn_id=DBT_CONN_ID,
+        account_id=DBT_ACCOUNT_ID,
+        job_id=DBT_JOB_ID,
+        check_interval=10,
+        timeout=120
+    )
 
-load_rappers_task >> load_to_gcs_task >> load_to_bq_task #>> load_to_bq.expand(table_name=tables_to_load)
-
-#[load_rappers_gcs_task, load_tracks_gcs_task] >> load_results_gcs_task
-#load_results_gcs_task >> [load_rappers_bq_task, load_tracks_bq_task] >> load_results_bq_task #>> trigger_dbt_cloud_job
-#chain(load_rappers_task, [load_rappers_gcs_task, load_tracks_gcs_task], [load_rappers_bq_task, load_tracks_bq_task], trigger_dbt_cloud_job)
+load_rappers_task >> load_to_gcs_task >> load_to_bq_task >> trigger_dbt_cloud_job
