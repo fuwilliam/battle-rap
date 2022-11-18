@@ -43,6 +43,15 @@ with DAG(
         python_callable=main
     )
 
+    trigger_dbt_cloud_job = DbtCloudRunJobOperator(
+        task_id="trigger_dbt_cloud_job",
+        dbt_cloud_conn_id=DBT_CONN_ID,
+        account_id=DBT_ACCOUNT_ID,
+        job_id=DBT_JOB_ID,
+        check_interval=10,
+        timeout=120
+    )
+
     for table_name in tables_to_load:
         load_to_gcs_task = PostgresToGCSOperator(
             task_id=f'load_{table_name}_to_gcs',
@@ -70,13 +79,4 @@ with DAG(
             skip_leading_rows=1
         )
 
-    trigger_dbt_cloud_job = DbtCloudRunJobOperator(
-        task_id="trigger_dbt_cloud_job",
-        dbt_cloud_conn_id=DBT_CONN_ID,
-        account_id=DBT_ACCOUNT_ID,
-        job_id=DBT_JOB_ID,
-        check_interval=10,
-        timeout=120
-    )
-
-load_rappers_task >> load_to_gcs_task >> load_to_bq_task >> trigger_dbt_cloud_job
+        load_rappers_task >> load_to_gcs_task >> load_to_bq_task >> trigger_dbt_cloud_job
