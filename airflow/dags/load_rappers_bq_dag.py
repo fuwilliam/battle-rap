@@ -43,10 +43,8 @@ with DAG(
         python_callable=main
     )
 
-  
-    @task
-    def load_to_gcs(table_name):
-        gcs_task = PostgresToGCSOperator(
+    for table_name in tables_to_load:
+        load_to_gcs_task = PostgresToGCSOperator(
             task_id=f'load_{table_name}_to_gcs',
             gcp_conn_id=GCP_CONN_ID,
             postgres_conn_id=SUPABASE_CONN_ID,
@@ -57,23 +55,20 @@ with DAG(
             gzip=False,
             use_server_side_cursor=False
         )
-        return gcs_task
 
-    # @task
-    # def load_to_bq(table_name):
-    #     return GCSToBigQueryOperator(
-    #     task_id=f'load_{table_name}_to_bq',
-    #     gcp_conn_id=GCP_CONN_ID,
-    #     bucket=GCS_BUCKET,
-    #     source_objects=[f'{table_name}/{table_name}.csv'],
-    #     destination_project_dataset_table='.'.join(
-    #         [BQ_PROJECT, BQ_DS, f'{table_name}']
-    #     ),
-    #     create_disposition='CREATE_IF_NEEDED',
-    #     write_disposition='WRITE_TRUNCATE',
-    #     autodetect=True,
-    #     skip_leading_rows=1
-    # )
+        load_to_bq_task = GCSToBigQueryOperator(
+            task_id=f'load_{table_name}_to_bq',
+            gcp_conn_id=GCP_CONN_ID,
+            bucket=GCS_BUCKET,
+            source_objects=[f'{table_name}/{table_name}.csv'],
+            destination_project_dataset_table='.'.join(
+                [BQ_PROJECT, BQ_DS, f'{table_name}']
+            ),
+            create_disposition='CREATE_IF_NEEDED',
+            write_disposition='WRITE_TRUNCATE',
+            autodetect=True,
+            skip_leading_rows=1
+        )
 
     # trigger_dbt_cloud_job = DbtCloudRunJobOperator(
     #     task_id="trigger_dbt_cloud_job",
@@ -84,7 +79,7 @@ with DAG(
     #     timeout=120
     # )
 
-load_rappers_task >> load_to_gcs.expand(table_name=tables_to_load) #>> load_to_bq.expand(table_name=tables_to_load)
+load_rappers_task >> load_to_gcs_task >> load_to_bq_task #>> load_to_bq.expand(table_name=tables_to_load)
 
 #[load_rappers_gcs_task, load_tracks_gcs_task] >> load_results_gcs_task
 #load_results_gcs_task >> [load_rappers_bq_task, load_tracks_bq_task] >> load_results_bq_task #>> trigger_dbt_cloud_job
