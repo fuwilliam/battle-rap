@@ -52,7 +52,6 @@ class ArtistLister(SpotifyAPI):
         enriched_dict = defaultdict(list)
         enriched_dict["artist_id"] = list(artist_dict.keys())
         enriched_dict["artist_name"] = list(artist_dict.values())
-
         for i in enriched_dict["artist_id"]:
             payload = self.get_artist(i)
             enriched_dict["popularity"].append(payload["popularity"])
@@ -74,5 +73,5 @@ class ArtistLister(SpotifyAPI):
                 tracks_dict["track_name"].append(payload[j]["name"])
                 tracks_dict["track_id"].append(payload[j]["id"])
                 tracks_dict["track_url"].append(f'https://open.spotify.com/embed/track/{payload[j]["id"]}?utm_source=generator')
-                tracks_dict["preview_url"].append(payload[j]["preview_url"])
+                # tracks_dict["preview_url"].append(payload[j]["preview_url"])
         return tracks_dict

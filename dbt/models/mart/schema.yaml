@@ -68,8 +68,8 @@ models:
         description: "URL to play the track on Spotify"
         tests:
           - not_null
-      - name: preview_url
-        description: "URL for a short snippet/preview of the track - often not available"
+#      - name: preview_url
+#        description: "URL for a short snippet/preview of the track - often not available"
       - name: load_date
         description: "Timestamp for when the record was initially loaded to Postgres from Spotify's API"
         tests:

@@ -12,7 +12,7 @@ Summary:
 
 1. Compile artist & track data from [Spotify's Web API](https://developer.spotify.com/documentation/web-api/) based on genre/playlist criteria with `Python` + `Pandas`
 2. Load data to a [Supabase](https://supabase.com/) Postgres database with `SQLAlchemy`
-3. Artist & track data is served to the [web app](https://battle-rap-365403.appspot.com/) (with `Flask` / `SQLAlchemy`), where the user makes their picks
+3. Artist & track data is served to the [web app](https://battlerap.app/) (with `Flask` / `SQLAlchemy`), where the user makes their picks
 4. Matchup results are written back to Supabase
 5. Raw artist, track and matchup data is loaded to [GCS](https://cloud.google.com/storage)
 6. Data is loaded from GCS to [BigQuery](https://cloud.google.com/bigquery)
@@ -28,8 +28,7 @@ View live @ [battlerap.app/visualize](https://battlerap.app/visualize)
 ## Ideas for the future
 
 - Play song snippet when hovering on artist picture
-- Create a bracket mode (March Madness style) to force user into "harder" choices and crown a champion
-- Login to see your personal ranking
+- Create a bracket mode (March Madness style) to force user into "tougher" choices and ultimately crown a champion
 - Elo rating or MaxDiff to rank artists
 - Popularity filter to narrow down matchup possibilities for user
 

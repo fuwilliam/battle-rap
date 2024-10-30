@@ -13,6 +13,7 @@ x-common:
     - ./airflow/plugins:/opt/airflow/plugins
     - ./airflow/scripts:/opt/airflow/scripts
     - /var/run/docker.sock:/var/run/docker.sock
+    - ./airflow/gcs-airflow-keyfile.json:/gcs-airflow-keyfile.json
 
 x-depends-on:
   &depends-on
@@ -55,8 +56,7 @@ services:
       - db-data:/var/lib/postgresql/data
 
   scheduler:
-    <<: *common
-    <<: *depends-on
+    <<: [*common, *depends-on]
     container_name: airflow-scheduler
     command: scheduler
     restart: on-failure
@@ -64,8 +64,7 @@ services:
       - "8793:8793"
 
   webserver:
-    <<: *common
-    <<: *depends-on
+    <<: [*common, *depends-on]
     container_name: airflow-webserver
     restart: always
     command: webserver

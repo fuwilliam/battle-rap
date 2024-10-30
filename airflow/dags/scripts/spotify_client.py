@@ -42,6 +42,7 @@ class SpotifyAPI(object):
         token_headers = self.get_token_headers()
         r = requests.post(token_url, data=token_data, headers=token_headers)
         if r.status_code not in range(200, 299):
+            print(f"Error: {r.status_code}, Response: {r.text}")
             return False
         data = r.json()
         now = datetime.datetime.now()

@@ -29,7 +29,7 @@ default_args = {"retries": 1}
 with DAG(
     dag_id="load_rappers_bq_dag",
     schedule_interval="0 23 * * *",
-    start_date=datetime(2022, 10, 23),
+    start_date=datetime(2024, 10, 1),
     description="""calls load_rappers script to pull data from 
                 Spotify API to Supabase Postgres DB, loads
                 data to GCS, then to BigQuery,
