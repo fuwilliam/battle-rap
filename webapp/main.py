@@ -41,7 +41,6 @@ class Tracks(db.Model):
     track_name = db.Column(db.String)
     track_rank = db.Column(db.Integer)
     track_url = db.Column(db.String)
-    preview_url = db.Column(db.String)
     load_date = db.Column(db.DateTime)
 
 

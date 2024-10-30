@@ -16,4 +16,5 @@ airflow/pgdata/
 
 airflow/gcs-airflow-keyfile.json
 gcs-airflow-keyfile.json
-
+webapp/app-engine-keyfile.json
+webapp/env_variables.yaml
