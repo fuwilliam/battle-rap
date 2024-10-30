@@ -60,13 +60,14 @@ def create_db_engine(conn_str):
     return engine
 
 
-def load_to_db(df_rappers, df_top_tracks, connection):
+def load_to_db(df_rappers, df_top_tracks, engine):
     start_time = time.perf_counter()
     print("Loading raw dataframes to DW...")
-    connection.execute(text("TRUNCATE TABLE rappers"))
-    df_rappers.to_sql("rappers", connection, if_exists="append", index=False)
-    df_top_tracks.to_sql("top_tracks", connection, if_exists="replace", index=False)
-    connection.commit()
+    with engine.begin() as connection:
+        connection.execute(text("TRUNCATE TABLE rappers"))
+        df_rappers.to_sql("rappers", connection, if_exists="append", index=False)
+        df_top_tracks.to_sql("top_tracks", connection, if_exists="replace", index=False)
+    # connection.commit()
     duration = time.perf_counter() - start_time
     print(f"Loaded in {duration:.2f} seconds")
 
@@ -80,8 +81,7 @@ def main():
     add_load_date(df_rappers, df_top_tracks)
 
     engine = create_db_engine(sqlalchemy_conn)
-    connection = engine.connect()
-    load_to_db(df_rappers, df_top_tracks, connection)
+    load_to_db(df_rappers, df_top_tracks, engine)
     print("Done!")
 
 
