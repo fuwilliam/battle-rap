@@ -261,7 +261,7 @@ export function VoteArena({ initial }: { initial: Matchup }) {
         />
       </div>
       <p className="mt-8 text-center text-sm text-white/40">
-        Tap a rapper to vote — or hover for a taste. Top tracks preview below each.
+        Tap to vote, hover for a taste
       </p>
     </section>
   );
