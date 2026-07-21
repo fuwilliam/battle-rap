@@ -54,6 +54,6 @@ export async function getRanking(): Promise<RankingRow[]> {
   return query<RankingRow>(
     `SELECT artist_id, artist_name, monthly_listeners, followers, wins, losses, win_rate
      FROM mart.rankings
-     ORDER BY win_rate DESC`,
+     ORDER BY win_rate DESC, wins DESC`,
   );
 }
