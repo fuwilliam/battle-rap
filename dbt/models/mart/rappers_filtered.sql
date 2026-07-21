@@ -5,19 +5,19 @@
     )
 }}
 
+-- popularity (0-100) is gone; filter on monthly_listeners instead.
 SELECT
     artist_id,
     artist_name,
-    popularity,
+    monthly_listeners,
     followers,
-    genres,
+    world_rank,
+    seeds,
     image_url,
     load_date
 FROM {{ ref('rappers') }}
-WHERE is_valid_genre = TRUE
-AND is_excluded_genre = FALSE
-AND is_latin_genre = FALSE
-AND popularity > 70
+WHERE flag_core_genre = TRUE
+AND monthly_listeners > 1000000
 AND followers > 100000
 
 {% if is_incremental() %}

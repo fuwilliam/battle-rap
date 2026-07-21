@@ -53,17 +53,15 @@
                 <h5><strong>TL;DR:</strong> Choose between two randomly matched up hip hop artists to help us decide
                     who's the greatest!</h5>
                 <p>-----</p>
-                <p> The artists are compiled from two main sources in Spotify's API: </p>
+                <p> The artists are compiled from two main sources in Spotify's public data: </p>
 
                 <li>Searching for the top n results for a given <a href="https://github.com/fuwilliam/battle-rap/blob/main/airflow/dags/scripts/spotify_dicts.py#L4">hip hop/rap related genre</a></li>
                 <li>From specific <a href="https://github.com/fuwilliam/battle-rap/blob/main/airflow/dags/scripts/spotify_dicts.py#L15">Spotify curated playlists</a> (e.g. Rap Caviar)</li>
                 <p></p>
-                <p>The initial list is then filtered based on genre and popularity criteria, but you will still see
-                    unknown/different genre artists because Spotify's subgenres can get weird sometimes. For example, in
-                    order to get some of my favorite artists to show up, I had to add <a
-                        href="https://www.thefader.com/2020/12/02/escape-room-genre-spotify-unwrapped-explanation-every-noise-glenn-mcdonald">escape
-                        room</a> to the list of genres to be queried, but that opened a can of worms of various artists
-                    who weren't quite hip hop related.</p>
+                <p>The initial list is then filtered by monthly listeners and follower count. Because Spotify no longer
+                    exposes per-artist genres, relevance is inferred from which seed (playlist or genre search) surfaced
+                    the artist &mdash; so you may still see the occasional off-genre artist that a fuzzy search dragged
+                    in.</p>
 
                 <p>From the final list, two are randomly matched up, and the user decides who wins. If they need help
                     choosing or just want to discover new music, each artists' top 3 tracks (based on Spotify's US

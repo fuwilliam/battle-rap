@@ -51,7 +51,7 @@
                 columns: [
                     { id: 'rank', name: 'Rank', width: '100px' },
                     { id: 'name', name: 'Artist', width: '240px' },
-                    { id: 'popularity', name: 'Popularity', width: '150px' },
+                    { id: 'monthly_listeners', name: 'Monthly Listeners', width: '170px' },
                     { id: 'followers', name: 'Followers', width: '150px' },
                     { id: 'wins', name: 'Wins', width: '120px' },
                     { id: 'losses', name: 'Losses', width: '120px' },
@@ -62,7 +62,7 @@
                       {
                         rank: {{ loop.index }},
                         name: '{{ artist.artist_name }}',
-                        popularity: {{ artist.popularity }},
+                        monthly_listeners: {{ artist.monthly_listeners }},
                         followers: {{ artist.followers }},
                         wins: {{ artist.wins }},
                         losses: {{ artist.losses }},

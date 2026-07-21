@@ -1,0 +1,32 @@
+name: Refresh rappers (Spotify → MotherDuck)
+
+# per-run label in the Actions list: "Refresh rappers · scheduled" / "· <actor>"
+run-name: Refresh rappers · ${{ github.event_name == 'schedule' && 'scheduled' || github.actor }}
+
+on:
+  schedule:
+    - cron: "0 7 * * *"   # daily 07:00 UTC
+  workflow_dispatch:        # manual "Run workflow" button
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    env:
+      # dbt-duckdb and the duckdb client both read this automatically for md: paths
+      motherduck_token: ${{ secrets.MOTHERDUCK_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      # installs the exact locked deps (and provisions Python per requires-python)
+      - run: uv sync --frozen
+
+      - name: Ingest Spotify → MotherDuck
+        run: uv run python -m ingestion.load_rappers
+
+      - name: dbt build (transform + test)
+        working-directory: dbt
+        run: uv run dbt build --profiles-dir .

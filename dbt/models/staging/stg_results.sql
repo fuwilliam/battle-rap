@@ -10,8 +10,8 @@ WITH results AS
         matchup_id,
         winner_id,
         loser_id,
-        DATETIME((TIMESTAMP_SECONDS(CAST(voted_at AS INT64))), 'UTC') AS voted_at,
-        ROW_NUMBER() OVER(PARTITION BY winner_id, loser_id, TIMESTAMP_SECONDS(CAST(voted_at AS INT64))) AS row_number
+        CAST(voted_at AS TIMESTAMP) AS voted_at,
+        ROW_NUMBER() OVER(PARTITION BY winner_id, loser_id, CAST(voted_at AS TIMESTAMP)) AS row_number
     FROM {{ source('raw', 'results') }}
 )
 SELECT

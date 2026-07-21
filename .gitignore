@@ -1,20 +1,35 @@
-# Byte-compiled / optimized / DLL files
+# Byte-compiled / optimized
 __pycache__/
 *.py[cod]
 *$py.class
-*.pyc
-*test.py
+
+# env / secrets
 .env
 *.env
-*.log
-airflow/logs/
-airflow/dags/scripts/__pycache__/
-airflow/dags/__pycache__/
-airflow/dags/load_rappers.egg-info/
-airflow/pgdata/
-
-
-airflow/gcs-airflow-keyfile.json
-gcs-airflow-keyfile.json
-webapp/app-engine-keyfile.json
 webapp/env_variables.yaml
+webapp/app-engine-keyfile.json
+
+# logs
+*.log
+logs/
+
+# macOS
+.DS_Store
+
+# uv / python
+.venv/
+
+# duckdb (local test files)
+*.duckdb
+
+# dbt
+.user.yml
+target/
+dbt_packages/
+
+# data dumps
+*_rows.sql
+*_backfill.parquet
+
+# claude
+.claude/
