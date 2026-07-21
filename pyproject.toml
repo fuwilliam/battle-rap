@@ -1,0 +1,22 @@
+[project]
+name = "battle-rap"
+version = "0.1.0"
+description = "Spotify -> MotherDuck rapper data pipeline (spotapi ingestion + dbt-duckdb)"
+requires-python = ">=3.12"
+dependencies = [
+    "spotapi",
+    # spotapi imports these storage backends at load time but doesn't declare them
+    "pymongo",
+    "redis",
+    "websockets",
+    # MotherDuck / DuckDB
+    "duckdb",
+    "dbt-duckdb",
+    # data handling
+    "pandas",
+    "python-dotenv",
+]
+
+[tool.uv]
+# this is an application, not a library -- don't try to build/install the repo
+package = false
