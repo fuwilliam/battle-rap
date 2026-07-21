@@ -1,0 +1,12 @@
+# dbt-duckdb profile targeting MotherDuck.
+# The `md:` path tells DuckDB to connect to MotherDuck; auth is read from the
+# `motherduck_token` environment variable automatically.
+default:
+  target: prod
+  outputs:
+    prod:
+      type: duckdb
+      # defaults to MotherDuck; override with a local file for testing:
+      #   DBT_DUCKDB_PATH=/tmp/battlerap.duckdb dbt build --profiles-dir .
+      path: "{{ env_var('DBT_DUCKDB_PATH', 'md:battlerap') }}"
+      threads: 4

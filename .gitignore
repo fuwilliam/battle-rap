@@ -18,3 +18,10 @@ airflow/gcs-airflow-keyfile.json
 gcs-airflow-keyfile.json
 webapp/app-engine-keyfile.json
 webapp/env_variables.yaml
+.venv/
+*.duckdb
+.user.yml
+target/
+dbt_packages/
+logs/
+.claude/
