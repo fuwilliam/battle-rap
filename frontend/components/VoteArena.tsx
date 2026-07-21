@@ -42,6 +42,14 @@ function RapperCard({
           <h2 className="text-2xl font-bold leading-tight">{rapper.artist_name}</h2>
           <p className="text-sm text-white/70">{fmt(rapper.monthly_listeners)} monthly listeners</p>
         </div>
+        {rapper.world_rank != null && rapper.world_rank > 0 && (
+          <div
+            title={`#${rapper.world_rank} most-streamed artist on Spotify`}
+            className="absolute right-2 top-2 rounded-full border border-accent/60 bg-black/70 px-2.5 py-1 text-xs font-semibold backdrop-blur"
+          >
+            🌍 #{rapper.world_rank}
+          </div>
+        )}
       </button>
 
       <div className="flex flex-col gap-2">
