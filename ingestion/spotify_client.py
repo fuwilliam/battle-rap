@@ -74,14 +74,6 @@ class SpotifyClient:
         """Raw artistUnion payload -- one network call, holds everything."""
         return _artist().get_artist(artist_id)["data"]["artistUnion"]
 
-    def related_artists(self, artist_id):
-        """{artist_id: artist_name} -- revived; the REST endpoint is dead."""
-        u = self._artist_union(artist_id)
-        return {
-            _uri_id(a.get("uri") or a.get("id")): a["profile"]["name"]
-            for a in u["relatedContent"]["relatedArtists"]["items"]
-        }
-
     def fetch_artist(self, artist_id):
         """Metadata + top tracks from a SINGLE fetch (stats and topTracks live
         in the same payload -- don't call it twice)."""
