@@ -1,34 +1,23 @@
-import { getSupabase } from "./supabase";
+import { execute, query } from "./motherduck";
 import type { Matchup, Rapper, RankingRow, Track } from "./types";
 
-// Same eligibility filter the original Flask app used.
-const MIN_MONTHLY_LISTENERS = 1_000_000;
-const MIN_FOLLOWERS = 100_000;
-
+// Eligibility (flag_core_genre + monthly_listeners >= 1M + followers >= 100k)
+// is encoded in the dbt model mart.rappers_filtered -- one source of truth.
 async function eligibleRappers(): Promise<Rapper[]> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("rappers")
-    .select("artist_id, artist_name, monthly_listeners, followers, world_rank, image_url")
-    .eq("flag_core_genre", true)
-    .gte("monthly_listeners", MIN_MONTHLY_LISTENERS)
-    .gte("followers", MIN_FOLLOWERS);
-
-  if (error) throw error;
-  return (data ?? []) as Rapper[];
+  return query<Rapper>(
+    `SELECT artist_id, artist_name, monthly_listeners, followers, world_rank, image_url
+     FROM mart.rappers_filtered`,
+  );
 }
 
 async function topTracks(artistId: string): Promise<Track[]> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("top_tracks")
-    .select("track_id, artist_id, track_name, track_rank, track_url")
-    .eq("artist_id", artistId)
-    .lte("track_rank", 3)
-    .order("track_rank", { ascending: true });
-
-  if (error) throw error;
-  return (data ?? []) as Track[];
+  return query<Track>(
+    `SELECT track_id, artist_id, track_name, track_rank, track_url
+     FROM mart.top_tracks
+     WHERE artist_id = ? AND track_rank <= 3
+     ORDER BY track_rank`,
+    [artistId],
+  );
 }
 
 // Pick two distinct random eligible rappers + their top tracks.
@@ -54,23 +43,17 @@ export async function getMatchup(): Promise<Matchup> {
 }
 
 export async function recordVote(winnerId: string, loserId: string): Promise<void> {
-  const supabase = getSupabase();
-  const { error } = await supabase.from("results").insert({
-    matchup_id: crypto.randomUUID(),
-    winner_id: winnerId,
-    loser_id: loserId,
-    voted_at: new Date().toISOString(),
-  });
-  if (error) throw error;
+  await execute(
+    `INSERT INTO raw.results (matchup_id, winner_id, loser_id, voted_at)
+     VALUES (?, ?, ?, now()::TIMESTAMP)`,
+    [crypto.randomUUID(), winnerId, loserId],
+  );
 }
 
 export async function getRanking(): Promise<RankingRow[]> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("rankings")
-    .select("artist_id, artist_name, monthly_listeners, followers, wins, losses, win_rate")
-    .order("win_rate", { ascending: false });
-
-  if (error) throw error;
-  return (data ?? []) as RankingRow[];
+  return query<RankingRow>(
+    `SELECT artist_id, artist_name, monthly_listeners, followers, wins, losses, win_rate
+     FROM mart.rankings
+     ORDER BY win_rate DESC`,
+  );
 }
