@@ -21,5 +21,6 @@ AND monthly_listeners > 1000000
 AND followers > 100000
 
 {% if is_incremental() %}
-    AND load_date > (select max(load_date) from {{ this }})
+    -- coalesce so an empty table (max = NULL) loads everything, not nothing
+    AND load_date > (select coalesce(max(load_date), timestamp '1900-01-01') from {{ this }})
 {% endif %}
