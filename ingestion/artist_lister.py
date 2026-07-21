@@ -11,10 +11,15 @@ from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 
 from ingestion.spotify_client import SpotifyClient
+from ingestion.spotify_dicts import loose_seeds
 
-# seeds treated as core hip-hop; artists surfaced only by other seeds are noise
-CORE_SEEDS = {"rap", "hip hop", "alternative hip hop", "drill", "grime",
-              "pluggnb", "escape room"}
+# all configured seeds are curated hip-hop, so an artist is "core" as long as
+# at least one of their seeds isn't a noise-prone loose seed (case-insensitive)
+_LOOSE = {s.lower() for s in loose_seeds}
+
+
+def _is_core(seeds):
+    return any(s.lower() not in _LOOSE for s in seeds)
 
 
 class ArtistLister:
@@ -61,7 +66,7 @@ class ArtistLister:
                     {
                         **res["artist"],
                         "seeds": ",".join(sorted(seeds)),
-                        "flag_core_genre": bool(seeds & CORE_SEEDS),
+                        "flag_core_genre": _is_core(seeds),
                     }
                 )
                 for t in res["top_tracks"]:

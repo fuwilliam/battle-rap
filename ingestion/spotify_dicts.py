@@ -11,7 +11,7 @@ genre_dict = {
     "pluggnb": 20
 }
 
-# Dict of Spotify curated playlist IDs -- playlist name is irrelevant
+# Dict of Spotify curated playlist IDs -- the name becomes the artist's seed
 playlist_dict = {
     "37i9dQZF1DX0XUsuxWHRQd": "Rap Caviar",
     "37i9dQZF1DWY4xHQp97fN6": "Get Turnt",
@@ -19,3 +19,8 @@ playlist_dict = {
     "37i9dQZF1DX9oh43oAzkyx": "Beast Mode Hip Hop",
     "37i9dQZF1DX186v583rmzp": "90s Hip Hop"
 }
+
+# Noise-prone seeds: fuzzy searches on these drag in off-genre artists.
+# An artist surfaced ONLY by loose seeds is not flagged core (flag_core_genre).
+# Compared case-insensitively against an artist's seeds.
+loose_seeds = {"escape room"}
