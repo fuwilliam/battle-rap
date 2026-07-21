@@ -45,7 +45,12 @@ def connect_motherduck():
     local = os.getenv("DUCKDB_LOCAL_PATH")
     if local:
         return duckdb.connect(local)
-    return duckdb.connect(f"md:{MOTHERDUCK_DATABASE}")
+    # MotherDuck doesn't auto-create the db; connect to the account root,
+    # create it if missing, then switch into it.
+    con = duckdb.connect("md:")
+    con.execute(f"CREATE DATABASE IF NOT EXISTS {MOTHERDUCK_DATABASE}")
+    con.execute(f"USE {MOTHERDUCK_DATABASE}")
+    return con
 
 
 def load_to_db(df_rappers, df_top_tracks, con):
