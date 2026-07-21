@@ -24,3 +24,9 @@ playlist_dict = {
 # An artist surfaced ONLY by loose seeds is not flagged core (flag_core_genre).
 # Compared case-insensitively against an artist's seeds.
 loose_seeds = {"escape room"}
+
+# Spotify artist IDs to hard-exclude (fuzzy search false positives, etc.).
+# e.g. "rap" search matched the *name* Raphaela Santos (a sertanejo singer).
+denylist = {
+    "1xUYzPQi0zdezdLkEjuqQH",  # Raphaela Santos (Brazilian sertanejo)
+}

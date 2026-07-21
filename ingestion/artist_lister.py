@@ -11,7 +11,7 @@ from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 
 from ingestion.spotify_client import SpotifyClient
-from ingestion.spotify_dicts import loose_seeds
+from ingestion.spotify_dicts import denylist, loose_seeds
 
 # all configured seeds are curated hip-hop, so an artist is "core" as long as
 # at least one of their seeds isn't a noise-prone loose seed (case-insensitive)
@@ -39,6 +39,10 @@ class ArtistLister:
             for aid, name in self.client.artists_from_playlist(pid).items():
                 artists[aid]["name"] = name
                 artists[aid]["seeds"].add(pname)
+
+        # drop hard-excluded artists (fuzzy-search false positives)
+        for aid in denylist:
+            artists.pop(aid, None)
 
         return dict(artists)
 
