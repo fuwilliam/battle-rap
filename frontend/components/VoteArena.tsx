@@ -16,7 +16,15 @@ const compact = new Intl.NumberFormat("en-US", {
 
 // Spotify track embed via the iFrame API, so its playback can be paused
 // programmatically and coordinated through the audio bus.
-function TrackEmbed({ trackId, title }: { trackId: string; title: string }) {
+function TrackEmbed({
+  trackId,
+  title,
+  index,
+}: {
+  trackId: string;
+  title: string;
+  index: number;
+}) {
   const hostRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -33,29 +41,34 @@ function TrackEmbed({ trackId, title }: { trackId: string; title: string }) {
     let controller: SpotifyController | undefined;
     let cancelled = false;
 
-    getSpotifyIframeApi().then((API) => {
-      if (cancelled) return;
-      API.createController(
-        mount,
-        { uri: `spotify:track:${trackId}`, width: "100%", height: 80 },
-        (ctrl) => {
-          controller = ctrl;
-          const handle: Pausable = { pause: () => ctrl.pause() };
-          ctrl.addListener("playback_update", (e) => {
-            if (!e.data.isPaused) audioBus.claim(handle);
-            else audioBus.release(handle);
-          });
-        },
-      );
-    });
+    // Stagger creation: firing every embed's controller at once trips
+    // Spotify's embed throttle ("upstream request timeout"). Space them out.
+    const timer = setTimeout(() => {
+      getSpotifyIframeApi().then((API) => {
+        if (cancelled) return;
+        API.createController(
+          mount,
+          { uri: `spotify:track:${trackId}`, width: "100%", height: 80 },
+          (ctrl) => {
+            controller = ctrl;
+            const handle: Pausable = { pause: () => ctrl.pause() };
+            ctrl.addListener("playback_update", (e) => {
+              if (!e.data.isPaused) audioBus.claim(handle);
+              else audioBus.release(handle);
+            });
+          },
+        );
+      });
+    }, index * 450);
 
     return () => {
       cancelled = true;
+      clearTimeout(timer);
       try {
         controller?.destroy();
       } catch {}
     };
-  }, [trackId]);
+  }, [trackId, index]);
 
   return (
     <div ref={hostRef} title={title} className="min-h-20 w-full overflow-hidden rounded-xl" />
@@ -166,8 +179,13 @@ function RapperCard({
       </button>
 
       <div className="flex flex-col gap-2">
-        {tracks.map((t) => (
-          <TrackEmbed key={t.track_id} trackId={t.track_id} title={t.track_name} />
+        {tracks.map((t, i) => (
+          <TrackEmbed
+            key={t.track_id}
+            trackId={t.track_id}
+            title={t.track_name}
+            index={i}
+          />
         ))}
       </div>
     </div>
