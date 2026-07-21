@@ -22,5 +22,6 @@ SELECT
 FROM results
 WHERE row_number = 1
 {% if is_incremental() %}
-    AND voted_at > (select max(voted_at) from {{ this }})
+    -- coalesce so an empty table (max = NULL) loads everything, not nothing
+    AND voted_at > (select coalesce(max(voted_at), timestamp '1900-01-01') from {{ this }})
 {% endif %}
