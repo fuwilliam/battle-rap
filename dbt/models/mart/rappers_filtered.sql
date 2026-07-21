@@ -1,10 +1,12 @@
 {{
     config(
-        materialized='incremental',
-        unique_key='artist_id'
+        materialized='table'
     )
 }}
 
+-- Current eligible set, rebuilt in FULL each run (not incremental) so artists
+-- that drop out -- genre-filtered at ingestion, fallen below the thresholds,
+-- or delisted -- actually disappear from matchups instead of lingering.
 -- popularity (0-100) is gone; filter on monthly_listeners instead.
 SELECT
     artist_id,
@@ -19,8 +21,3 @@ FROM {{ ref('rappers') }}
 WHERE flag_core_genre = TRUE
 AND monthly_listeners > 1000000
 AND followers > 100000
-
-{% if is_incremental() %}
-    -- coalesce so an empty table (max = NULL) loads everything, not nothing
-    AND load_date > (select coalesce(max(load_date), timestamp '1900-01-01') from {{ this }})
-{% endif %}
