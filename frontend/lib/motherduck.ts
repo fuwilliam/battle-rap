@@ -11,15 +11,14 @@ let connPromise: Promise<DuckDBConnection> | null = null;
 
 function connect(): Promise<DuckDBConnection> {
   if (!connPromise) {
+    // On serverless (Vercel/Lambda) only /tmp is writable and HOME is empty,
+    // so DuckDB can't find a home dir for its extensions (incl. MotherDuck).
+    // Point HOME at /tmp before connecting; DuckDB reads it via getenv.
+    process.env.HOME ||= "/tmp";
     // DUCKDB_PATH lets us point at a local .duckdb file for testing;
     // defaults to MotherDuck in production.
     const path = process.env.DUCKDB_PATH ?? "md:battlerap";
-    // On serverless (Vercel/Lambda) only /tmp is writable, and DuckDB needs a
-    // home dir for extensions (incl. MotherDuck) + a temp dir for spills.
-    connPromise = DuckDBInstance.create(path, {
-      home_directory: "/tmp",
-      temp_directory: "/tmp",
-    }).then((i) => i.connect());
+    connPromise = DuckDBInstance.create(path).then((i) => i.connect());
   }
   return connPromise;
 }
