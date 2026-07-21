@@ -16,9 +16,22 @@ Caveat: spotapi is unofficial. If Spotify rotates its internal TOTP secret
 this breaks until spotapi ships an update (`pip install -U spotapi`).
 """
 
+import threading
+
 from spotapi import Artist, Public, PublicPlaylist
 
 TRACK_EMBED = "https://open.spotify.com/embed/track/{}?utm_source=generator"
+
+# spotapi's Artist wraps a TLS session that isn't safe to share across threads;
+# hand each worker thread its own instance.
+_thread = threading.local()
+
+
+def _artist():
+    client = getattr(_thread, "artist", None)
+    if client is None:
+        client = _thread.artist = Artist()
+    return client
 
 
 def _uri_id(uri):
@@ -27,10 +40,6 @@ def _uri_id(uri):
 
 
 class SpotifyClient:
-    def __init__(self):
-        # reuse one TLS client across calls
-        self._artist = Artist()
-
     # ---- discovery -----------------------------------------------------
 
     def artists_from_playlist(self, playlist_id):
@@ -59,22 +68,28 @@ class SpotifyClient:
                     return out
         return out
 
+    # ---- enrichment ----------------------------------------------------
+
+    def _artist_union(self, artist_id):
+        """Raw artistUnion payload -- one network call, holds everything."""
+        return _artist().get_artist(artist_id)["data"]["artistUnion"]
+
     def related_artists(self, artist_id):
         """{artist_id: artist_name} -- revived; the REST endpoint is dead."""
-        u = self._artist.get_artist(artist_id)["data"]["artistUnion"]
+        u = self._artist_union(artist_id)
         return {
             _uri_id(a.get("uri") or a.get("id")): a["profile"]["name"]
             for a in u["relatedContent"]["relatedArtists"]["items"]
         }
 
-    # ---- enrichment ----------------------------------------------------
-
-    def get_artist(self, artist_id):
-        """Flat artist metadata. `monthly_listeners` replaces old `popularity`."""
-        u = self._artist.get_artist(artist_id)["data"]["artistUnion"]
+    def fetch_artist(self, artist_id):
+        """Metadata + top tracks from a SINGLE fetch (stats and topTracks live
+        in the same payload -- don't call it twice)."""
+        u = self._artist_union(artist_id)
         stats = u.get("stats", {})
         sources = (u.get("visuals", {}).get("avatarImage") or {}).get("sources", [])
-        return {
+
+        artist = {
             "artist_id": artist_id,
             "artist_name": u["profile"]["name"],
             "monthly_listeners": stats.get("monthlyListeners"),
@@ -83,15 +98,11 @@ class SpotifyClient:
             "image_url": sources[0]["url"] if sources else None,
         }
 
-    def get_top_tracks(self, artist_id):
-        """List of the artist's top tracks with rank + playcount."""
-        u = self._artist.get_artist(artist_id)["data"]["artistUnion"]
-        items = u["discography"]["topTracks"]["items"]
-        out = []
-        for rank, it in enumerate(items, start=1):
+        top_tracks = []
+        for rank, it in enumerate(u["discography"]["topTracks"]["items"], start=1):
             t = it["track"]
             tid = _uri_id(t["uri"])
-            out.append(
+            top_tracks.append(
                 {
                     "track_rank": rank,
                     "track_name": t["name"],
@@ -100,4 +111,5 @@ class SpotifyClient:
                     "playcount": t.get("playcount"),
                 }
             )
-        return out
+
+        return {"artist": artist, "top_tracks": top_tracks}

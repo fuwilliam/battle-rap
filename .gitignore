@@ -24,3 +24,4 @@ webapp/env_variables.yaml
 target/
 dbt_packages/
 logs/
+.claude/

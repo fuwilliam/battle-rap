@@ -21,8 +21,7 @@ jobs:
       - run: pip install -r requirements.txt
 
       - name: Ingest Spotify -> MotherDuck
-        working-directory: airflow/dags
-        run: python -m scripts.load_rappers
+        run: python -m ingestion.load_rappers
 
       - name: dbt build (transform + test)
         working-directory: dbt

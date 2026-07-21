@@ -1,23 +1,27 @@
 #!/usr/bin/env python
 # coding: utf-8
-import time
+"""Ingest Spotify artists + top tracks into MotherDuck (raw schema).
+
+Run from the repo root:  python -m ingestion.load_rappers
+"""
+
 import os
-from dotenv import load_dotenv
+import time
+
 import duckdb
 import pandas as pd
+from dotenv import load_dotenv
 
-from scripts.artist_lister import ArtistLister
-import scripts.spotify_dicts
+import ingestion.spotify_dicts
+from ingestion.artist_lister import ArtistLister
 
-path_env = os.path.abspath(__file__ + "/../../")
-load_dotenv(os.path.join(path_env, ".env"))
+load_dotenv()
 
-# spotapi reads Spotify's public data anonymously -- no client id/secret needed.
 # Target is MotherDuck (cloud DuckDB); auth via the `motherduck_token` env var.
 MOTHERDUCK_DATABASE = os.getenv("MOTHERDUCK_DATABASE", "battlerap")
 
-genre_dict = scripts.spotify_dicts.genre_dict
-playlist_dict = scripts.spotify_dicts.playlist_dict
+genre_dict = ingestion.spotify_dicts.genre_dict
+playlist_dict = ingestion.spotify_dicts.playlist_dict
 
 
 def compile_artists(lister, genres, playlists):
@@ -25,32 +29,11 @@ def compile_artists(lister, genres, playlists):
     return lister.combine_artists(genres, playlists)
 
 
-def get_artist_data(lister, combined_artists):
-    start_time = time.perf_counter()
-    print("Loading artists...")
-    df_rappers = pd.DataFrame(lister.pull_artist_data(combined_artists))
-    duration = time.perf_counter() - start_time
-    print(f"{len(df_rappers)} artists loaded in {duration:.2f} seconds")
-    return df_rappers
-
-
-def get_tracks_data(lister, combined_artists):
-    start_time = time.perf_counter()
-    print("Loading tracks...")
-    df_top_tracks = pd.DataFrame(lister.pull_artist_top_tracks(combined_artists))
-    duration = time.perf_counter() - start_time
-    print(f"{len(df_top_tracks)} tracks loaded in {duration:.2f} seconds")
-    return df_top_tracks
-
-
 def add_load_date(df_rappers, df_top_tracks):
-    # genre flags now come from the seed (see ArtistLister); no per-artist genres
-    df_rappers["load_date"] = pd.Timestamp(
-        time.strftime("%Y-%m-%d %H:%M:%S %Z", time.gmtime(time.time()))
-    )
-    df_top_tracks["load_date"] = pd.Timestamp(
-        time.strftime("%Y-%m-%d %H:%M:%S %Z", time.gmtime(time.time()))
-    )
+    # genre flags come from the seed (see ArtistLister); no per-artist genres
+    now = pd.Timestamp(time.strftime("%Y-%m-%d %H:%M:%S %Z", time.gmtime(time.time())))
+    df_rappers["load_date"] = now
+    df_top_tracks["load_date"] = now
 
 
 def connect_motherduck():
@@ -99,8 +82,15 @@ def main():
     lister = ArtistLister()
 
     combined_artists = compile_artists(lister, genre_dict, playlist_dict)
-    df_rappers = get_artist_data(lister, combined_artists)
-    df_top_tracks = get_tracks_data(lister, combined_artists)
+
+    print(f"Enriching {len(combined_artists)} artists (parallel)...")
+    start_time = time.perf_counter()
+    rapper_rows, track_rows = lister.enrich(combined_artists)
+    df_rappers = pd.DataFrame(rapper_rows)
+    df_top_tracks = pd.DataFrame(track_rows)
+    duration = time.perf_counter() - start_time
+    print(f"{len(df_rappers)} artists, {len(df_top_tracks)} tracks in {duration:.2f}s")
+
     add_load_date(df_rappers, df_top_tracks)
 
     con = connect_motherduck()
