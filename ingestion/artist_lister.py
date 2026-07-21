@@ -28,9 +28,6 @@ class ArtistLister:
 
     def combine_artists(self, genre_dict, playlist_dict):
         """{artist_id: {"name": str, "seeds": set}} from searches + playlists."""
-        # playlist names are the trusted (hand-curated) seeds; keyword-genre
-        # searches are the noisy ones the graph filter should police.
-        self.trusted_seeds = set(playlist_dict.values())
         artists = defaultdict(lambda: {"name": None, "seeds": set()})
 
         for genre, limit in genre_dict.items():
@@ -53,13 +50,22 @@ class ArtistLister:
         """Fetch every artist once (parallel), then genre-filter -> rows.
 
         One network call per artist yields metadata, top tracks, and related
-        artists. Playlist-sourced artists are trusted outright (curated). For
-        the noisier keyword-search-sourced artists we use related artists as a
-        genre signal: rappers relate to rappers, so a search-sourced artist is
-        kept only if at least `min_related_in_pool` of their related artists
-        also showed up in the pool. This drops keyword false positives (e.g. a
-        sertanejo singer whose *name* contains "rap") without touching curated
-        playlist artists.
+        artists. Relatedness is the genre signal (rappers relate to rappers),
+        and we check it BOTH directions against the discovered pool:
+
+          * outward -- the artist relates to >= `min_related_in_pool` pool
+            members, or
+          * inward  -- >= 1 pool member relates back to the artist.
+
+        An artist is kept if EITHER holds. Inward rescues real rappers whose
+        own peers aren't in the pool yet (e.g. Young Dro, Atmosphere) but whom
+        pool rappers still cite. Requiring both signals to be zero to drop
+        catches off-genre artists disconnected from the rap graph entirely:
+        keyword false positives (a sertanejo singer whose *name* has "rap")
+        AND non-rap guests Spotify lists on a curated rap playlist (Peter
+        Gabriel, one Alt-Hip-Hop track, related artists all classic rock).
+        A pure outward+pool check alone would wrongly drop Young Dro/Atmosphere;
+        a 2-hop union would wrongly keep Peter Gabriel -- inward is the split.
         """
 
         def work(aid):
@@ -76,17 +82,21 @@ class ArtistLister:
                     enriched[aid] = res
 
         pool = set(enriched)
-        trusted = getattr(self, "trusted_seeds", set())
+        # inward vouches: how many pool artists relate TO each id
+        in_degree = defaultdict(int)
+        for res in enriched.values():
+            for rid in res["related"]:
+                in_degree[rid] += 1
+
         rapper_rows, track_rows, dropped = [], [], []
         for aid, res in enriched.items():
             seeds = artist_dict[aid]["seeds"]
-            # trust playlist-sourced artists (curated); only graph-filter the
-            # keyword-search-sourced ones, where the fuzzy noise comes from.
-            if not (seeds & trusted):
-                overlap = sum(1 for rid in res["related"] if rid in pool)
-                if overlap < min_related_in_pool:
-                    dropped.append(res["artist"]["artist_name"])
-                    continue
+            # keep if the rap graph connects to the artist in EITHER direction
+            outward = sum(1 for rid in res["related"] if rid in pool)
+            inward = in_degree.get(aid, 0)
+            if outward < min_related_in_pool and inward < 1:
+                dropped.append(res["artist"]["artist_name"])
+                continue
             rapper_rows.append(
                 {
                     **res["artist"],
