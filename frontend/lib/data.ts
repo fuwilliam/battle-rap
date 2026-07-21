@@ -102,7 +102,7 @@ export async function getRanking(): Promise<RankingRow[]> {
      FROM mart.rappers r
      LEFT JOIN wins w USING (artist_id)
      LEFT JOIN losses l USING (artist_id)
-     WHERE coalesce(w.wins, 0) + coalesce(l.losses, 0) > 0
+     WHERE coalesce(w.wins, 0) + coalesce(l.losses, 0) >= 5
      ORDER BY win_rate DESC, wins DESC`,
   );
 }

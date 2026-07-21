@@ -11,7 +11,7 @@ from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 
 from ingestion.spotify_client import SpotifyClient
-from ingestion.spotify_dicts import loose_seeds
+from ingestion.spotify_dicts import denylist, loose_seeds
 
 # all configured seeds are curated hip-hop, so an artist is "core" as long as
 # at least one of their seeds isn't a noise-prone loose seed (case-insensitive)
@@ -40,15 +40,23 @@ class ArtistLister:
                 artists[aid]["name"] = name
                 artists[aid]["seeds"].add(pname)
 
+        # drop hard-excluded artists (fuzzy-search false positives)
+        for aid in denylist:
+            artists.pop(aid, None)
+
         return dict(artists)
 
-    def enrich(self, artist_dict, max_workers=12):
-        """Fetch every artist once (parallel) -> (rapper_rows, track_rows).
+    def enrich(self, artist_dict, max_workers=12, min_related_in_pool=1):
+        """Fetch every artist once (parallel), then genre-filter -> rows.
 
-        Single pass: one network call per artist yields both the artist row
-        and its top-track rows.
+        One network call per artist yields metadata, top tracks, and related
+        artists. Since spotapi exposes no per-artist genre, we use the related
+        artists as a genre signal: rappers relate to rappers, so an artist is
+        kept only if at least `min_related_in_pool` of their related artists
+        also showed up in the discovered pool. This drops keyword-search false
+        positives (e.g. a sertanejo singer whose *name* contains "rap") whose
+        related artists are all off-genre and thus absent from the pool.
         """
-        rapper_rows, track_rows = [], []
 
         def work(aid):
             try:
@@ -57,19 +65,31 @@ class ArtistLister:
                 print(f"skip artist {aid} ({artist_dict[aid]['name']}): {e}")
                 return aid, None
 
+        enriched = {}
         with ThreadPoolExecutor(max_workers=max_workers) as ex:
             for aid, res in ex.map(work, list(artist_dict)):
-                if not res:
-                    continue
-                seeds = artist_dict[aid]["seeds"]
-                rapper_rows.append(
-                    {
-                        **res["artist"],
-                        "seeds": ",".join(sorted(seeds)),
-                        "flag_core_genre": _is_core(seeds),
-                    }
-                )
-                for t in res["top_tracks"]:
-                    track_rows.append({"artist_id": aid, **t})
+                if res:
+                    enriched[aid] = res
+
+        pool = set(enriched)
+        rapper_rows, track_rows, dropped = [], [], []
+        for aid, res in enriched.items():
+            overlap = sum(1 for rid in res["related"] if rid in pool)
+            if overlap < min_related_in_pool:
+                dropped.append(res["artist"]["artist_name"])
+                continue
+            seeds = artist_dict[aid]["seeds"]
+            rapper_rows.append(
+                {
+                    **res["artist"],
+                    "seeds": ",".join(sorted(seeds)),
+                    "flag_core_genre": _is_core(seeds),
+                }
+            )
+            for t in res["top_tracks"]:
+                track_rows.append({"artist_id": aid, **t})
+
+        if dropped:
+            print(f"genre filter dropped {len(dropped)} off-genre artists: {sorted(dropped)}")
 
         return rapper_rows, track_rows
