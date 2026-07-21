@@ -28,6 +28,9 @@ class ArtistLister:
 
     def combine_artists(self, genre_dict, playlist_dict):
         """{artist_id: {"name": str, "seeds": set}} from searches + playlists."""
+        # playlist names are the trusted (hand-curated) seeds; keyword-genre
+        # searches are the noisy ones the graph filter should police.
+        self.trusted_seeds = set(playlist_dict.values())
         artists = defaultdict(lambda: {"name": None, "seeds": set()})
 
         for genre, limit in genre_dict.items():
@@ -50,12 +53,13 @@ class ArtistLister:
         """Fetch every artist once (parallel), then genre-filter -> rows.
 
         One network call per artist yields metadata, top tracks, and related
-        artists. Since spotapi exposes no per-artist genre, we use the related
-        artists as a genre signal: rappers relate to rappers, so an artist is
+        artists. Playlist-sourced artists are trusted outright (curated). For
+        the noisier keyword-search-sourced artists we use related artists as a
+        genre signal: rappers relate to rappers, so a search-sourced artist is
         kept only if at least `min_related_in_pool` of their related artists
-        also showed up in the discovered pool. This drops keyword-search false
-        positives (e.g. a sertanejo singer whose *name* contains "rap") whose
-        related artists are all off-genre and thus absent from the pool.
+        also showed up in the pool. This drops keyword false positives (e.g. a
+        sertanejo singer whose *name* contains "rap") without touching curated
+        playlist artists.
         """
 
         def work(aid):
@@ -72,13 +76,17 @@ class ArtistLister:
                     enriched[aid] = res
 
         pool = set(enriched)
+        trusted = getattr(self, "trusted_seeds", set())
         rapper_rows, track_rows, dropped = [], [], []
         for aid, res in enriched.items():
-            overlap = sum(1 for rid in res["related"] if rid in pool)
-            if overlap < min_related_in_pool:
-                dropped.append(res["artist"]["artist_name"])
-                continue
             seeds = artist_dict[aid]["seeds"]
+            # trust playlist-sourced artists (curated); only graph-filter the
+            # keyword-search-sourced ones, where the fuzzy noise comes from.
+            if not (seeds & trusted):
+                overlap = sum(1 for rid in res["related"] if rid in pool)
+                if overlap < min_related_in_pool:
+                    dropped.append(res["artist"]["artist_name"])
+                    continue
             rapper_rows.append(
                 {
                     **res["artist"],
