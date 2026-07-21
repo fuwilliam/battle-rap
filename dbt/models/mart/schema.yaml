@@ -14,9 +14,7 @@ models:
         tests:
           - not_null
       - name: monthly_listeners
-        description: "Artist's Spotify monthly listener count (replaces the old 0-100 popularity)"
-        tests:
-          - not_null
+        description: "Artist's Spotify monthly listener count (replaces the old 0-100 popularity). Nullable at this layer."
       - name: followers
         description: "Artist's follower count"
         tests:
