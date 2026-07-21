@@ -1,2 +1,7 @@
 apache-airflow-providers-dbt-cloud==3.2.0
 python-dotenv==0.21.0
+spotapi
+# spotapi imports these storage backends at load time but doesn't declare them
+pymongo
+redis
+websockets

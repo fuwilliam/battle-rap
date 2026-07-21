@@ -24,13 +24,12 @@ class Rapper(db.Model):
     __tablename__ = "rappers"
     artist_id = db.Column(db.String, primary_key=True)
     artist_name = db.Column(db.String)
-    popularity = db.Column(db.Integer)
-    followers = db.Column(db.Integer)
-    genres = db.Column(db.String)
+    monthly_listeners = db.Column(db.BigInteger)
+    followers = db.Column(db.BigInteger)
+    world_rank = db.Column(db.Integer)
+    seeds = db.Column(db.String)
     image_url = db.Column(db.String)
-    flag_main_genre = db.Column(db.Boolean)
-    flag_excl_genre = db.Column(db.Boolean)
-    flag_latin_genre = db.Column(db.Boolean)
+    flag_core_genre = db.Column(db.Boolean)
     load_date = db.Column(db.DateTime)
 
 
@@ -41,6 +40,7 @@ class Tracks(db.Model):
     track_name = db.Column(db.String)
     track_rank = db.Column(db.Integer)
     track_url = db.Column(db.String)
+    playcount = db.Column(db.BigInteger)
     load_date = db.Column(db.DateTime)
 
 
@@ -61,8 +61,8 @@ class Ranking(db.Model):
     __tablename__ = "rankings"
     artist_id = db.Column(db.String, primary_key=True)
     artist_name = db.Column(db.String)
-    popularity = db.Column(db.Integer)
-    followers = db.Column(db.Integer)
+    monthly_listeners = db.Column(db.BigInteger)
+    followers = db.Column(db.BigInteger)
     wins = db.Column(db.Integer)
     losses = db.Column(db.Integer)
     win_rate = db.Column(db.Float)
@@ -86,10 +86,8 @@ def vote():
 
     rapper1 = (
         Rapper.query.filter(
-            Rapper.flag_main_genre == True,
-            Rapper.flag_excl_genre == False,
-            Rapper.flag_latin_genre == False,
-            Rapper.popularity >= 70,
+            Rapper.flag_core_genre == True,
+            Rapper.monthly_listeners >= 1000000,
             Rapper.followers >= 100000,
         )
         .order_by(func.random())
@@ -97,10 +95,8 @@ def vote():
     )
     rapper2 = (
         Rapper.query.filter(
-            Rapper.flag_main_genre == True,
-            Rapper.flag_excl_genre == False,
-            Rapper.flag_latin_genre == False,
-            Rapper.popularity >= 70,
+            Rapper.flag_core_genre == True,
+            Rapper.monthly_listeners >= 1000000,
             Rapper.followers >= 100000,
             Rapper.artist_id != rapper1.artist_id,
         )

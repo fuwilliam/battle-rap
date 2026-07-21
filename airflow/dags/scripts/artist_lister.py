@@ -1,77 +1,75 @@
 #!/usr/bin/env python
 # coding: utf-8
+"""Build the rapper list from seed genres + reference playlists, then enrich.
+
+Discovery seeds double as the genre signal (spotapi exposes no per-artist
+genres): every artist carries the set of seeds that surfaced them, e.g.
+{"rap", "Rap Caviar"}. Downstream filtering uses those seeds.
+"""
 
 from collections import defaultdict
-from scripts.spotify_client import SpotifyAPI
+
+from scripts.spotify_client import SpotifyClient
+
+# seeds treated as core hip-hop; artists surfaced only by other seeds are noise
+CORE_SEEDS = {"rap", "hip hop", "alternative hip hop", "drill", "grime",
+              "pluggnb", "escape room"}
 
 
-class ArtistLister(SpotifyAPI):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    def parse_search(self, genre, rows=50):
-        artist_dict = {}
-        for batch in range(0, rows, 50):
-            payload = self.search_artist_by_genre(
-                genre, limit=min(rows, 50), offset=batch
-            )  # batch = [50, 100, 150..]
-            for i in range(len(payload["artists"]["items"])):
-                artist_dict[payload["artists"]["items"][i]["id"]] = payload["artists"][
-                    "items"
-                ][i]["name"]
-        return artist_dict
-
-    def parse_playlist(self, playlist_id):
-        artist_dict = {}
-        rows = len(self.get_playlist(playlist_id)["tracks"]["items"])
-        for batch in range(0, rows, 50):
-            payload = self.get_playlist_artists(
-                playlist_id, limit=min(rows, 50), offset=batch
-            )
-            for i in range(len(payload["items"])):
-                if payload["items"][i]["track"] is None:
-                    continue
-                for j in range(len(payload["items"][i]["track"]["artists"])):
-                    artist_dict[
-                        payload["items"][i]["track"]["artists"][j]["id"]
-                    ] = payload["items"][i]["track"]["artists"][j]["name"]
-        return artist_dict
-
-    def union_dict(self, dict1, dict2):
-        return dict(list(dict1.items()) + list(dict2.items()))
+class ArtistLister:
+    def __init__(self):
+        self.client = SpotifyClient()
 
     def combine_artists(self, genre_dict, playlist_dict):
-        artist_dict = {}
-        for k, v in genre_dict.items():
-            artist_dict = self.union_dict(artist_dict, self.parse_search(k, v))
-        for k in playlist_dict.keys():
-            artist_dict = self.union_dict(artist_dict, self.parse_playlist(k))
-        return artist_dict
+        """{artist_id: {"name": str, "seeds": set}} from searches + playlists."""
+        artists = defaultdict(lambda: {"name": None, "seeds": set()})
+
+        for genre, limit in genre_dict.items():
+            for aid, name in self.client.artists_from_search(genre, limit).items():
+                artists[aid]["name"] = name
+                artists[aid]["seeds"].add(genre)
+
+        for pid, pname in playlist_dict.items():
+            for aid, name in self.client.artists_from_playlist(pid).items():
+                artists[aid]["name"] = name
+                artists[aid]["seeds"].add(pname)
+
+        return dict(artists)
 
     def pull_artist_data(self, artist_dict):
-        enriched_dict = defaultdict(list)
-        enriched_dict["artist_id"] = list(artist_dict.keys())
-        enriched_dict["artist_name"] = list(artist_dict.values())
-        for i in enriched_dict["artist_id"]:
-            payload = self.get_artist(i)
-            enriched_dict["popularity"].append(payload["popularity"])
-            enriched_dict["followers"].append(payload["followers"]["total"])
-            enriched_dict["genres"].append(payload["genres"][0:3])
-            enriched_dict["image_url"].append(
-                payload["images"][0]["url"] if len(payload["images"]) > 1 else None
-            )
-        return enriched_dict
+        """One enriched row per artist (monthly_listeners replaces popularity)."""
+        rows = defaultdict(list)
+        for aid, meta in artist_dict.items():
+            try:
+                a = self.client.get_artist(aid)
+            except Exception as e:  # skip artists the scrape can't resolve
+                print(f"skip artist {aid} ({meta['name']}): {e}")
+                continue
+            seeds = sorted(meta["seeds"])
+            rows["artist_id"].append(a["artist_id"])
+            rows["artist_name"].append(a["artist_name"])
+            rows["monthly_listeners"].append(a["monthly_listeners"])
+            rows["followers"].append(a["followers"])
+            rows["world_rank"].append(a["world_rank"])
+            rows["image_url"].append(a["image_url"])
+            rows["seeds"].append(",".join(seeds))
+            rows["flag_core_genre"].append(bool(meta["seeds"] & CORE_SEEDS))
+        return rows
 
     def pull_artist_top_tracks(self, artist_dict):
-        tracks_dict = defaultdict(list)
-
-        for i in list(artist_dict.keys()):
-            payload = self.get_top_tracks(i)["tracks"]
-            for j in range(min(10, len(payload))):
-                tracks_dict["artist_id"].append(i)
-                tracks_dict["track_rank"].append(j + 1)
-                tracks_dict["track_name"].append(payload[j]["name"])
-                tracks_dict["track_id"].append(payload[j]["id"])
-                tracks_dict["track_url"].append(f'https://open.spotify.com/embed/track/{payload[j]["id"]}?utm_source=generator')
-                # tracks_dict["preview_url"].append(payload[j]["preview_url"])
-        return tracks_dict
+        """Flattened top-tracks table across all artists."""
+        rows = defaultdict(list)
+        for aid in artist_dict:
+            try:
+                tracks = self.client.get_top_tracks(aid)
+            except Exception as e:
+                print(f"skip tracks {aid}: {e}")
+                continue
+            for t in tracks:
+                rows["artist_id"].append(aid)
+                rows["track_rank"].append(t["track_rank"])
+                rows["track_name"].append(t["track_name"])
+                rows["track_id"].append(t["track_id"])
+                rows["track_url"].append(t["track_url"])
+                rows["playcount"].append(t["playcount"])
+        return rows

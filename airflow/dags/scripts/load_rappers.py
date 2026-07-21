@@ -12,8 +12,7 @@ import scripts.spotify_dicts
 path_env = os.path.abspath(__file__ + "/../../")
 load_dotenv(os.path.join(path_env, ".env"))
 
-client_id = os.getenv("SPOTIFY_CLIENT_ID")
-client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
+# spotapi reads Spotify's public data anonymously -- no client id/secret needed
 sqlalchemy_conn = os.getenv("SUPABASE_URI")#os.getenv("POSTGRES_CONN") #'postgresql://airflow:airflow@127.0.0.1:5555/battle-rap'
 
 genre_dict = scripts.spotify_dicts.genre_dict
@@ -44,9 +43,7 @@ def get_tracks_data(lister, combined_artists):
 
 
 def add_load_date(df_rappers, df_top_tracks):
-    df_rappers["flag_main_genre"] = df_rappers.genres.astype(str).str.contains("rap|hip hop|drill|grime|pluggnb|escape room")
-    df_rappers["flag_excl_genre"] = (df_rappers.genres.astype(str).str.contains("rap rock|rap metal|reggaeton|hyperpop|electropop")) & (~df_rappers.genres.astype(str).str.contains("hip hop"))
-    df_rappers["flag_latin_genre"] = df_rappers.genres.astype(str).str.contains("latin|argentin|mexican hip hop")
+    # genre flags now come from the seed (see ArtistLister); no per-artist genres
     df_rappers["load_date"] = pd.Timestamp(
         time.strftime("%Y-%m-%d %H:%M:%S %Z", time.gmtime(time.time()))
     )
@@ -73,7 +70,7 @@ def load_to_db(df_rappers, df_top_tracks, engine):
 
 
 def main():
-    lister = ArtistLister(client_id, client_secret)
+    lister = ArtistLister()
 
     combined_artists = compile_artists(lister, genre_dict, playlist_dict)
     df_rappers = get_artist_data(lister, combined_artists)
