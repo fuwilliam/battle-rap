@@ -2,7 +2,7 @@ version: 2
 
 sources:
   - name: raw
-    description: "Sourced from Spotify (via spotapi) > Postgres (Supabase) > GCS > BQ"
+    description: "Ingested from Spotify (via spotapi) straight into MotherDuck"
     tables:
       - name: rappers
       - name: top_tracks
