@@ -25,8 +25,9 @@ playlist_dict = {
 # Compared case-insensitively against an artist's seeds.
 loose_seeds = {"escape room"}
 
-# Spotify artist IDs to hard-exclude (fuzzy search false positives, etc.).
-# e.g. "rap" search matched the *name* Raphaela Santos (a sertanejo singer).
-denylist = {
-    "1xUYzPQi0zdezdLkEjuqQH",  # Raphaela Santos (Brazilian sertanejo)
-}
+# Spotify artist IDs to hard-exclude (manual override for anything the
+# related-artist graph filter misses). Currently EMPTY on purpose: we're
+# testing whether the graph filter catches off-genre slips (e.g. Raphaela
+# Santos, a sertanejo singer matched by the "rap" keyword) on its own.
+# Re-add IDs here if a slip survives the filter.
+denylist: set[str] = set()
