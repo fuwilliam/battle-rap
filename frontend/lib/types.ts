@@ -27,6 +27,7 @@ export type RankingRow = {
   artist_id: string;
   artist_name: string;
   monthly_listeners: number;
+  image_url: string | null;
   wins: number;
   losses: number;
   win_rate: number;
