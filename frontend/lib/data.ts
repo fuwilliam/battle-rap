@@ -79,10 +79,30 @@ export async function recordVote(winnerId: string, loserId: string): Promise<voi
   );
 }
 
+// Live leaderboard: aggregate votes straight from raw.results (updates the
+// instant a vote lands) and join to the daily-built rapper stats. No dbt run
+// needed for standings to move.
 export async function getRanking(): Promise<RankingRow[]> {
   return query<RankingRow>(
-    `SELECT artist_id, artist_name, monthly_listeners, wins, losses, win_rate
-     FROM mart.rankings
+    `WITH wins AS (
+       SELECT winner_id AS artist_id, count(*) AS wins FROM raw.results GROUP BY 1
+     ),
+     losses AS (
+       SELECT loser_id AS artist_id, count(*) AS losses FROM raw.results GROUP BY 1
+     )
+     SELECT
+       r.artist_id,
+       r.artist_name,
+       r.monthly_listeners,
+       r.image_url,
+       coalesce(w.wins, 0) AS wins,
+       coalesce(l.losses, 0) AS losses,
+       coalesce(w.wins, 0)::double
+         / nullif(coalesce(w.wins, 0) + coalesce(l.losses, 0), 0) AS win_rate
+     FROM mart.rappers r
+     LEFT JOIN wins w USING (artist_id)
+     LEFT JOIN losses l USING (artist_id)
+     WHERE coalesce(w.wins, 0) + coalesce(l.losses, 0) > 0
      ORDER BY win_rate DESC, wins DESC`,
   );
 }
