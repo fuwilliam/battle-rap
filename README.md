@@ -12,7 +12,7 @@ A project built to answer the quintessential question: who is the greatest rappe
 4. **Serve** — the web app shows matchups; user picks are written back to MotherDuck.
 5. **Orchestrate** — [GitHub Actions](.github/workflows/refresh-rappers.yml) runs the daily ingest + `dbt build` on a cron. Python deps are locked with [uv](https://docs.astral.sh/uv/).
 
-> Previously: Spotify Web API → Supabase → GCS → BigQuery → Power BI, orchestrated by Airflow. Spotify gated the Web API behind an app-owner Premium subscription, so the stack was rebuilt on free, self-hosted-free foundations (spotapi · MotherDuck · dbt-duckdb · GitHub Actions · uv).
+> Previously: Spotify Web API → Supabase → GCS → BigQuery → Power BI, orchestrated by Airflow. Spotify gated the Web API behind an app-owner Premium subscription, so the stack was rebuilt on free foundations (spotapi · MotherDuck · dbt-duckdb · GitHub Actions · uv). The full story + the old architecture are archived in [`docs/HISTORY.md`](docs/HISTORY.md).
 
 ## Layout
 
