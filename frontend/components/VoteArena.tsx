@@ -17,16 +17,26 @@ const compact = new Intl.NumberFormat("en-US", {
 // Spotify track embed via the iFrame API, so its playback can be paused
 // programmatically and coordinated through the audio bus.
 function TrackEmbed({ trackId, title }: { trackId: string; title: string }) {
-  const ref = useRef<HTMLDivElement>(null);
+  const hostRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const host = hostRef.current;
+    if (!host) return;
+
+    // createController REPLACES the element it's given with an iframe. If we
+    // hand it the React-rendered node, React later can't find that node to
+    // unmount it (removeChild throws -> the page's error boundary). So mount
+    // into a throwaway child we own; React only ever removes `host`.
+    const mount = document.createElement("div");
+    host.appendChild(mount);
+
     let controller: SpotifyController | undefined;
     let cancelled = false;
 
     getSpotifyIframeApi().then((API) => {
-      if (cancelled || !ref.current) return;
+      if (cancelled) return;
       API.createController(
-        ref.current,
+        mount,
         { uri: `spotify:track:${trackId}`, width: "100%", height: 80 },
         (ctrl) => {
           controller = ctrl;
@@ -48,7 +58,7 @@ function TrackEmbed({ trackId, title }: { trackId: string; title: string }) {
   }, [trackId]);
 
   return (
-    <div ref={ref} title={title} className="min-h-20 w-full overflow-hidden rounded-xl" />
+    <div ref={hostRef} title={title} className="min-h-20 w-full overflow-hidden rounded-xl" />
   );
 }
 
