@@ -42,7 +42,8 @@ server code here and is never sent to the browser.
 1. Push this repo to GitHub (already the case).
 2. On [vercel.com](https://vercel.com) → **Add New Project** → import the repo.
 3. Set **Root Directory** to `frontend`.
-4. Add the two env vars (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`) under Settings → Environment Variables.
-5. Deploy. Point the `battlerap.app` domain at the Vercel project when ready.
+4. Add the `motherduck_token` env var under Settings → Environment Variables.
+5. Deploy. Runs at `https://battle-rap.vercel.app` (add a custom domain later if you want).
 
-Once live, App Engine / GKE can be retired.
+Notes:
+- The DuckDB native addon needs `serverExternalPackages` + `outputFileTracingIncludes` (see `next.config.ts`) and `HOME=/tmp` at runtime (see `lib/motherduck.ts`) to work on Vercel's serverless functions.
