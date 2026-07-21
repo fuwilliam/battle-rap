@@ -1,4 +1,4 @@
-# [battlerap.app](https://battlerap.app)
+# [Battle Rap](https://battle-rap.vercel.app)
 
 A project built to answer the quintessential question: who is the greatest rapper?
 

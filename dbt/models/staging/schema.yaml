@@ -76,7 +76,7 @@ models:
     description: "Basically casting voted_at to proper timestamp format"
     columns:
       - name: matchup_id
-        description: "UUID for each matchup voted at battlerap.app"
+        description: "UUID for each matchup voted in the app"
         tests:
           - unique
           - not_null
