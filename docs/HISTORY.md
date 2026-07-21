@@ -46,7 +46,7 @@ artist (sequential) to a single spotapi fetch per artist, parallelized —
 
 ## The original architecture (2022) — archived for nostalgia
 
-![Architecture](https://github.com/fuwilliam/battle-rap/blob/main/images/architecture_zoom.png)
+![Architecture](images/architecture_zoom.png)
 
 1. Compile artist & track data from Spotify's Web API (`Python` + `Pandas`).
 2. Load to a Supabase Postgres DB with `SQLAlchemy`.
