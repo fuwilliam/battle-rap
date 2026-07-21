@@ -1,10 +1,10 @@
 import Link from "next/link";
 
 const links = [
-  { href: "/about", label: "About" },
   { href: "/ranking", label: "Ranking" },
   { href: "/visualize", label: "Visualize" },
   { href: "https://github.com/fuwilliam/battle-rap", label: "Github", external: true },
+  { href: "/about", label: "About" },
 ];
 
 export function Navbar() {
