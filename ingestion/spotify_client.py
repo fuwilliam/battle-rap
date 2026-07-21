@@ -112,4 +112,11 @@ class SpotifyClient:
                 }
             )
 
-        return {"artist": artist, "top_tracks": top_tracks}
+        # related artists are a genre signal (rappers relate to rappers); used
+        # by the lister to filter out off-genre keyword-search false positives
+        related = [
+            _uri_id(a.get("uri") or a.get("id"))
+            for a in u["relatedContent"]["relatedArtists"]["items"]
+        ]
+
+        return {"artist": artist, "top_tracks": top_tracks, "related": related}

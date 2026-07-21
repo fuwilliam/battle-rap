@@ -13,7 +13,6 @@ dependencies = [
     "duckdb",
     "dbt-duckdb",
     # data handling
-    "pandas",
     "python-dotenv",
 ]
 

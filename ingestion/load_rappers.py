@@ -9,7 +9,6 @@ import os
 import time
 
 import duckdb
-import pandas as pd
 from dotenv import load_dotenv
 
 import ingestion.spotify_dicts
@@ -24,16 +23,17 @@ genre_dict = ingestion.spotify_dicts.genre_dict
 playlist_dict = ingestion.spotify_dicts.playlist_dict
 
 
+def _int(v):
+    """Spotify play counts come as numeric strings; coerce to int or None."""
+    try:
+        return int(v)
+    except (TypeError, ValueError):
+        return None
+
+
 def compile_artists(lister, genres, playlists):
     print("Compiling artist list...")
     return lister.combine_artists(genres, playlists)
-
-
-def add_load_date(df_rappers, df_top_tracks):
-    # genre flags come from the seed (see ArtistLister); no per-artist genres
-    now = pd.Timestamp(time.strftime("%Y-%m-%d %H:%M:%S %Z", time.gmtime(time.time())))
-    df_rappers["load_date"] = now
-    df_top_tracks["load_date"] = now
 
 
 def connect_motherduck():
@@ -53,18 +53,75 @@ def connect_motherduck():
     return con
 
 
-def load_to_db(df_rappers, df_top_tracks, con):
+def load_to_db(rapper_rows, track_rows, con):
     start_time = time.perf_counter()
-    print("Loading raw dataframes to MotherDuck...")
+    print("Loading raw tables to MotherDuck...")
 
     con.execute("CREATE SCHEMA IF NOT EXISTS raw")
 
-    # register() exposes a pandas df to SQL with zero copy; CREATE OR REPLACE
-    # gives a clean full-refresh of the raw tables each run.
-    con.register("df_rappers", df_rappers)
-    con.register("df_top_tracks", df_top_tracks)
-    con.execute("CREATE OR REPLACE TABLE raw.rappers AS SELECT * FROM df_rappers")
-    con.execute("CREATE OR REPLACE TABLE raw.top_tracks AS SELECT * FROM df_top_tracks")
+    # full-refresh the raw tables; load_date stamped in SQL so every row of a
+    # run shares one timestamp source.
+    con.execute(
+        """
+        CREATE OR REPLACE TABLE raw.rappers (
+            artist_id         VARCHAR,
+            artist_name       VARCHAR,
+            monthly_listeners BIGINT,
+            followers         BIGINT,
+            world_rank        BIGINT,
+            image_url         VARCHAR,
+            seeds             VARCHAR,
+            flag_core_genre   BOOLEAN,
+            load_date         TIMESTAMP
+        )
+        """
+    )
+    if rapper_rows:
+        con.executemany(
+            "INSERT INTO raw.rappers VALUES (?, ?, ?, ?, ?, ?, ?, ?, now()::TIMESTAMP)",
+            [
+                (
+                    r["artist_id"],
+                    r["artist_name"],
+                    r["monthly_listeners"],
+                    r["followers"],
+                    r["world_rank"],
+                    r["image_url"],
+                    r["seeds"],
+                    r["flag_core_genre"],
+                )
+                for r in rapper_rows
+            ],
+        )
+
+    con.execute(
+        """
+        CREATE OR REPLACE TABLE raw.top_tracks (
+            artist_id  VARCHAR,
+            track_rank BIGINT,
+            track_name VARCHAR,
+            track_id   VARCHAR,
+            track_url  VARCHAR,
+            playcount  BIGINT,
+            load_date  TIMESTAMP
+        )
+        """
+    )
+    if track_rows:
+        con.executemany(
+            "INSERT INTO raw.top_tracks VALUES (?, ?, ?, ?, ?, ?, now()::TIMESTAMP)",
+            [
+                (
+                    t["artist_id"],
+                    t["track_rank"],
+                    t["track_name"],
+                    t["track_id"],
+                    t["track_url"],
+                    _int(t["playcount"]),
+                )
+                for t in track_rows
+            ],
+        )
 
     # votes are written by the webapp; make sure the table exists so dbt's
     # results/standings models don't fail on a fresh database.
@@ -80,7 +137,7 @@ def load_to_db(df_rappers, df_top_tracks, con):
     )
 
     duration = time.perf_counter() - start_time
-    print(f"Loaded in {duration:.2f} seconds")
+    print(f"Loaded {len(rapper_rows)} rappers, {len(track_rows)} tracks in {duration:.2f}s")
 
 
 def main():
@@ -91,15 +148,11 @@ def main():
     print(f"Enriching {len(combined_artists)} artists (parallel)...")
     start_time = time.perf_counter()
     rapper_rows, track_rows = lister.enrich(combined_artists)
-    df_rappers = pd.DataFrame(rapper_rows)
-    df_top_tracks = pd.DataFrame(track_rows)
     duration = time.perf_counter() - start_time
-    print(f"{len(df_rappers)} artists, {len(df_top_tracks)} tracks in {duration:.2f}s")
-
-    add_load_date(df_rappers, df_top_tracks)
+    print(f"{len(rapper_rows)} artists, {len(track_rows)} tracks in {duration:.2f}s")
 
     con = connect_motherduck()
-    load_to_db(df_rappers, df_top_tracks, con)
+    load_to_db(rapper_rows, track_rows, con)
     con.close()
     print("Done!")
 
