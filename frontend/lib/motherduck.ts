@@ -1,26 +1,23 @@
-import {
-  DuckDBInstance,
-  type DuckDBConnection,
-  type DuckDBValue,
-} from "@duckdb/node-api";
+import { DuckDBInstance, type DuckDBValue } from "@duckdb/node-api";
 
-// Server-only. One lazily-created MotherDuck connection, reused within a warm
-// server instance. Auth comes from the `motherduck_token` env var, which the
-// DuckDB MotherDuck extension reads automatically for `md:` paths.
-let connPromise: Promise<DuckDBConnection> | null = null;
+// Server-only. Share ONE MotherDuck instance (the database handle) but give
+// every operation its own short-lived connection. A DuckDB connection can't
+// run statements concurrently, so a single shared connection breaks when a
+// vote write and the next matchup read overlap ("Failed to execute prepared
+// statement"). Separate connections off one instance run safely in parallel.
+// Auth: the `motherduck_token` env var, read automatically for `md:` paths.
+let instancePromise: Promise<DuckDBInstance> | null = null;
 
-function connect(): Promise<DuckDBConnection> {
-  if (!connPromise) {
+function getInstance(): Promise<DuckDBInstance> {
+  if (!instancePromise) {
     // On serverless (Vercel/Lambda) only /tmp is writable and HOME is empty,
     // so DuckDB can't find a home dir for its extensions (incl. MotherDuck).
-    // Point HOME at /tmp before connecting; DuckDB reads it via getenv.
     process.env.HOME ||= "/tmp";
-    // DUCKDB_PATH lets us point at a local .duckdb file for testing;
-    // defaults to MotherDuck in production.
+    // DUCKDB_PATH lets us point at a local .duckdb file for testing.
     const path = process.env.DUCKDB_PATH ?? "md:battlerap";
-    connPromise = DuckDBInstance.create(path).then((i) => i.connect());
+    instancePromise = DuckDBInstance.create(path);
   }
-  return connPromise;
+  return instancePromise;
 }
 
 // DuckDB returns BIGINT columns as JS `bigint`, which `JSON.stringify` throws
@@ -34,12 +31,20 @@ function toJson<T>(row: Record<string, DuckDBValue>): T {
 }
 
 export async function query<T>(sql: string, params: DuckDBValue[] = []): Promise<T[]> {
-  const conn = await connect();
-  const reader = await conn.runAndReadAll(sql, params);
-  return reader.getRowObjects().map((r) => toJson<T>(r));
+  const conn = await (await getInstance()).connect();
+  try {
+    const reader = await conn.runAndReadAll(sql, params);
+    return reader.getRowObjects().map((r) => toJson<T>(r));
+  } finally {
+    conn.closeSync();
+  }
 }
 
 export async function execute(sql: string, params: DuckDBValue[] = []): Promise<void> {
-  const conn = await connect();
-  await conn.run(sql, params);
+  const conn = await (await getInstance()).connect();
+  try {
+    await conn.run(sql, params);
+  } finally {
+    conn.closeSync();
+  }
 }
