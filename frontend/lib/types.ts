@@ -5,6 +5,7 @@ export type Rapper = {
   followers: number;
   world_rank: number | null;
   image_url: string | null;
+  preview_url: string | null; // 30s clip of the artist's top track (hover preview)
 };
 
 export type Track = {
@@ -26,7 +27,6 @@ export type RankingRow = {
   artist_id: string;
   artist_name: string;
   monthly_listeners: number;
-  followers: number;
   wins: number;
   losses: number;
   win_rate: number;

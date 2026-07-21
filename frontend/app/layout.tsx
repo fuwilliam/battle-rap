@@ -1,12 +1,17 @@
 import type { Metadata } from "next";
-import { Poppins } from "next/font/google";
+import { Space_Grotesk, Inter } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 
-const poppins = Poppins({
-  variable: "--font-poppins",
-  weight: ["400", "500", "600", "700"],
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space-grotesk",
+  weight: ["500", "600", "700"],
+  subsets: ["latin"],
+});
+
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
 });
 
@@ -21,7 +26,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${poppins.variable} h-full antialiased`}>
+    <html
+      lang="en"
+      className={`${spaceGrotesk.variable} ${inter.variable} h-full antialiased`}
+    >
       <body className="min-h-full flex flex-col">
         <Navbar />
         <main className="flex-1">{children}</main>

@@ -38,8 +38,37 @@ export async function getMatchup(): Promise<Matchup> {
     topTracks(rapper1.artist_id),
     topTracks(rapper2.artist_id),
   ]);
+  const [preview1, preview2] = await Promise.all([
+    topPreviewUrl(tracks1[0]?.track_id),
+    topPreviewUrl(tracks2[0]?.track_id),
+  ]);
 
-  return { rapper1, rapper2, tracks1, tracks2 };
+  return {
+    rapper1: { ...rapper1, preview_url: preview1 },
+    rapper2: { ...rapper2, preview_url: preview2 },
+    tracks1,
+    tracks2,
+  };
+}
+
+// The 30s preview MP3 isn't exposed by the API anymore; scrape it from the
+// track's embed page (same __NEXT_DATA__ trick as the playlist reader).
+async function topPreviewUrl(trackId?: string): Promise<string | null> {
+  if (!trackId) return null;
+  try {
+    const res = await fetch(`https://open.spotify.com/embed/track/${trackId}`, {
+      headers: { "User-Agent": "Mozilla/5.0" },
+    });
+    const html = await res.text();
+    const m = html.match(
+      /<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/,
+    );
+    if (!m) return null;
+    const data = JSON.parse(m[1]);
+    return data?.props?.pageProps?.state?.data?.entity?.audioPreview?.url ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export async function recordVote(winnerId: string, loserId: string): Promise<void> {
@@ -52,7 +81,7 @@ export async function recordVote(winnerId: string, loserId: string): Promise<voi
 
 export async function getRanking(): Promise<RankingRow[]> {
   return query<RankingRow>(
-    `SELECT artist_id, artist_name, monthly_listeners, followers, wins, losses, win_rate
+    `SELECT artist_id, artist_name, monthly_listeners, wins, losses, win_rate
      FROM mart.rankings
      ORDER BY win_rate DESC, wins DESC`,
   );
