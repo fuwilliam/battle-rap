@@ -2,11 +2,55 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Matchup, Rapper, Track } from "@/lib/types";
+import {
+  audioBus,
+  getSpotifyIframeApi,
+  type Pausable,
+  type SpotifyController,
+} from "@/lib/spotifyEmbed";
 
 const compact = new Intl.NumberFormat("en-US", {
   notation: "compact",
   maximumFractionDigits: 1,
 });
+
+// Spotify track embed via the iFrame API, so its playback can be paused
+// programmatically and coordinated through the audio bus.
+function TrackEmbed({ trackId, title }: { trackId: string; title: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let controller: SpotifyController | undefined;
+    let cancelled = false;
+
+    getSpotifyIframeApi().then((API) => {
+      if (cancelled || !ref.current) return;
+      API.createController(
+        ref.current,
+        { uri: `spotify:track:${trackId}`, width: "100%", height: 80 },
+        (ctrl) => {
+          controller = ctrl;
+          const handle: Pausable = { pause: () => ctrl.pause() };
+          ctrl.addListener("playback_update", (e) => {
+            if (!e.data.isPaused) audioBus.claim(handle);
+            else audioBus.release(handle);
+          });
+        },
+      );
+    });
+
+    return () => {
+      cancelled = true;
+      try {
+        controller?.destroy();
+      } catch {}
+    };
+  }, [trackId]);
+
+  return (
+    <div ref={ref} title={title} className="min-h-20 w-full overflow-hidden rounded-xl" />
+  );
+}
 
 function RapperCard({
   rapper,
@@ -25,8 +69,8 @@ function RapperCard({
 }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const fadeRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const busHandle = useRef<Pausable>({ pause: () => {} });
 
-  // ramp volume toward a target for a smooth crossfade in/out
   const fadeTo = useCallback((target: number, onDone?: () => void) => {
     const el = audioRef.current;
     if (!el) return;
@@ -43,21 +87,27 @@ function RapperCard({
     }, 40);
   }, []);
 
+  const stopPreview = useCallback(() => {
+    const el = audioRef.current;
+    if (!el) return;
+    audioBus.release(busHandle.current);
+    fadeTo(0, () => el.pause());
+  }, [fadeTo]);
+
   const startPreview = useCallback(() => {
     const el = audioRef.current;
     if (!el || !rapper.preview_url) return;
+    audioBus.claim(busHandle.current); // pause any playing track/clip first
     el.currentTime = 0;
     el.volume = 0;
     el.play().then(() => fadeTo(0.85)).catch(() => {}); // ignore autoplay blocks
   }, [rapper.preview_url, fadeTo]);
 
-  const stopPreview = useCallback(() => {
-    const el = audioRef.current;
-    if (!el) return;
-    fadeTo(0, () => el.pause());
-  }, [fadeTo]);
+  // the bus pauses the hover clip by calling this handle
+  useEffect(() => {
+    busHandle.current.pause = stopPreview;
+  }, [stopPreview]);
 
-  // cleanup on unmount / matchup swap
   useEffect(
     () => () => {
       if (fadeRef.current) clearInterval(fadeRef.current);
@@ -107,16 +157,7 @@ function RapperCard({
 
       <div className="flex flex-col gap-2">
         {tracks.map((t) => (
-          <iframe
-            key={t.track_id}
-            src={t.track_url}
-            title={t.track_name}
-            height={80}
-            className="w-full rounded-xl"
-            frameBorder={0}
-            loading="lazy"
-            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-          />
+          <TrackEmbed key={t.track_id} trackId={t.track_id} title={t.track_name} />
         ))}
       </div>
     </div>
