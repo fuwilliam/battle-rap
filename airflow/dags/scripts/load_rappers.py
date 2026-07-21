@@ -3,8 +3,8 @@
 import time
 import os
 from dotenv import load_dotenv
+import duckdb
 import pandas as pd
-from sqlalchemy import create_engine, text
 
 from scripts.artist_lister import ArtistLister
 import scripts.spotify_dicts
@@ -12,8 +12,9 @@ import scripts.spotify_dicts
 path_env = os.path.abspath(__file__ + "/../../")
 load_dotenv(os.path.join(path_env, ".env"))
 
-# spotapi reads Spotify's public data anonymously -- no client id/secret needed
-sqlalchemy_conn = os.getenv("SUPABASE_URI")#os.getenv("POSTGRES_CONN") #'postgresql://airflow:airflow@127.0.0.1:5555/battle-rap'
+# spotapi reads Spotify's public data anonymously -- no client id/secret needed.
+# Target is MotherDuck (cloud DuckDB); auth via the `motherduck_token` env var.
+MOTHERDUCK_DATABASE = os.getenv("MOTHERDUCK_DATABASE", "battlerap")
 
 genre_dict = scripts.spotify_dicts.genre_dict
 playlist_dict = scripts.spotify_dicts.playlist_dict
@@ -52,19 +53,44 @@ def add_load_date(df_rappers, df_top_tracks):
     )
 
 
-def create_db_engine(conn_str):
-    engine = create_engine(conn_str)
-    return engine
+def connect_motherduck():
+    """Open the DuckDB target.
+
+    Uses a local .duckdb file if DUCKDB_LOCAL_PATH is set (handy for testing),
+    otherwise MotherDuck (`md:` path; token from the `motherduck_token` env).
+    """
+    local = os.getenv("DUCKDB_LOCAL_PATH")
+    if local:
+        return duckdb.connect(local)
+    return duckdb.connect(f"md:{MOTHERDUCK_DATABASE}")
 
 
-def load_to_db(df_rappers, df_top_tracks, engine):
+def load_to_db(df_rappers, df_top_tracks, con):
     start_time = time.perf_counter()
-    print("Loading raw dataframes to DW...")
-    with engine.begin() as connection:
-        connection.execute(text("TRUNCATE TABLE rappers"))
-        df_rappers.to_sql("rappers", connection, if_exists="append", index=False)
-        df_top_tracks.to_sql("top_tracks", connection, if_exists="replace", index=False)
-    # connection.commit()
+    print("Loading raw dataframes to MotherDuck...")
+
+    con.execute("CREATE SCHEMA IF NOT EXISTS raw")
+
+    # register() exposes a pandas df to SQL with zero copy; CREATE OR REPLACE
+    # gives a clean full-refresh of the raw tables each run.
+    con.register("df_rappers", df_rappers)
+    con.register("df_top_tracks", df_top_tracks)
+    con.execute("CREATE OR REPLACE TABLE raw.rappers AS SELECT * FROM df_rappers")
+    con.execute("CREATE OR REPLACE TABLE raw.top_tracks AS SELECT * FROM df_top_tracks")
+
+    # votes are written by the webapp; make sure the table exists so dbt's
+    # results/standings models don't fail on a fresh database.
+    con.execute(
+        """
+        CREATE TABLE IF NOT EXISTS raw.results (
+            matchup_id VARCHAR,
+            winner_id  VARCHAR,
+            loser_id   VARCHAR,
+            voted_at   TIMESTAMP
+        )
+        """
+    )
+
     duration = time.perf_counter() - start_time
     print(f"Loaded in {duration:.2f} seconds")
 
@@ -77,8 +103,9 @@ def main():
     df_top_tracks = get_tracks_data(lister, combined_artists)
     add_load_date(df_rappers, df_top_tracks)
 
-    engine = create_db_engine(sqlalchemy_conn)
-    load_to_db(df_rappers, df_top_tracks, engine)
+    con = connect_motherduck()
+    load_to_db(df_rappers, df_top_tracks, con)
+    con.close()
     print("Done!")
 
 

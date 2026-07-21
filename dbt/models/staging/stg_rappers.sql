@@ -7,5 +7,5 @@ SELECT
     seeds,
     flag_core_genre,
     image_url,
-    DATETIME((TIMESTAMP_SECONDS(CAST(load_date AS INT64))), 'UTC') AS load_date
+    CAST(load_date AS TIMESTAMP) AS load_date
 FROM {{ source('raw', 'rappers') }}

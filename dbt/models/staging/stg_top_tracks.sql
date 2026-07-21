@@ -5,5 +5,5 @@ SELECT
     track_id,
     track_url,
     playcount,
-    DATETIME((TIMESTAMP_SECONDS(CAST(load_date AS INT64))), 'UTC') AS load_date
+    CAST(load_date AS TIMESTAMP) AS load_date
 FROM {{ source('raw', 'top_tracks') }}
