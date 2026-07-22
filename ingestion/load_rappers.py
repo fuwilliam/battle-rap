@@ -136,6 +136,23 @@ def load_to_db(rapper_rows, track_rows, con):
         """
     )
 
+    # bracket-mode votes, kept separate from raw.results: bracket matchups are
+    # seeded (not random), so mixing them into raw.results would skew the
+    # head-to-head win-rate leaderboard. matches_in_round records how many
+    # matches were being played in that round (2 = Final Four, 1 = the Final),
+    # which is all getBracketRanking needs to derive championships/Final Fours.
+    con.execute(
+        """
+        CREATE TABLE IF NOT EXISTS raw.bracket_results (
+            run_id           VARCHAR,
+            matches_in_round BIGINT,
+            winner_id        VARCHAR,
+            loser_id         VARCHAR,
+            voted_at         TIMESTAMP
+        )
+        """
+    )
+
     duration = time.perf_counter() - start_time
     print(f"Loaded {len(rapper_rows)} rappers, {len(track_rows)} tracks in {duration:.2f}s")
 

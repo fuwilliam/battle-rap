@@ -1,0 +1,53 @@
+"use client";
+
+import { useState } from "react";
+import type { SeedEntry } from "@/lib/types";
+
+const SIZES = [16, 32, 64] as const;
+
+export function BracketSizePicker({
+  onReady,
+}: {
+  onReady: (entrants: SeedEntry[]) => void;
+}) {
+  const [loadingSize, setLoadingSize] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function pick(size: number) {
+    setLoadingSize(size);
+    setError(null);
+    try {
+      const res = await fetch(`/api/bracket?size=${size}`, { cache: "no-store" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error ?? "Failed to build bracket");
+      onReady(data.entrants);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to build bracket");
+      setLoadingSize(null);
+    }
+  }
+
+  return (
+    <section className="mx-auto max-w-lg px-4 py-16 text-center">
+      <h1 className="text-3xl font-bold">Bracket Mode</h1>
+      <p className="mt-2 text-white/60">Pick a field size and crown a champion.</p>
+
+      <div className="mt-8 flex justify-center gap-4">
+        {SIZES.map((size) => (
+          <button
+            key={size}
+            type="button"
+            onClick={() => pick(size)}
+            disabled={loadingSize !== null}
+            className="rounded-2xl border border-white/10 px-6 py-4 text-lg font-semibold transition
+              enabled:hover:border-accent enabled:hover:-translate-y-1 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {loadingSize === size ? "Loading…" : size}
+          </button>
+        ))}
+      </div>
+
+      {error && <p className="mt-6 text-sm text-red-400">{error}</p>}
+    </section>
+  );
+}

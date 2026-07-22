@@ -1,5 +1,5 @@
 import { execute, query } from "./motherduck";
-import type { Matchup, Rapper, RankingRow, Track } from "./types";
+import type { BracketRankingRow, Matchup, Rapper, RankingRow, SeedEntry, Track } from "./types";
 
 // Eligibility (flag_core_genre + monthly_listeners >= 1M + followers >= 100k)
 // is encoded in the dbt model mart.rappers_filtered -- one source of truth.
@@ -20,6 +20,20 @@ async function topTracks(artistId: string): Promise<Track[]> {
   );
 }
 
+// Top 3 tracks + hover-preview clip for a specific pair of artists (used for
+// both the random head-to-head matchup and a single bracket match).
+export async function pairTracks(
+  id1: string,
+  id2: string,
+): Promise<{ tracks1: Track[]; preview1: string | null; tracks2: Track[]; preview2: string | null }> {
+  const [tracks1, tracks2] = await Promise.all([topTracks(id1), topTracks(id2)]);
+  const [preview1, preview2] = await Promise.all([
+    topPreviewUrl(tracks1[0]?.track_id),
+    topPreviewUrl(tracks2[0]?.track_id),
+  ]);
+  return { tracks1, preview1, tracks2, preview2 };
+}
+
 // Pick two distinct random eligible rappers + their top tracks.
 export async function getMatchup(): Promise<Matchup> {
   const pool = await eligibleRappers();
@@ -34,14 +48,10 @@ export async function getMatchup(): Promise<Matchup> {
   const rapper1 = pool[i];
   const rapper2 = pool[j];
 
-  const [tracks1, tracks2] = await Promise.all([
-    topTracks(rapper1.artist_id),
-    topTracks(rapper2.artist_id),
-  ]);
-  const [preview1, preview2] = await Promise.all([
-    topPreviewUrl(tracks1[0]?.track_id),
-    topPreviewUrl(tracks2[0]?.track_id),
-  ]);
+  const { tracks1, preview1, tracks2, preview2 } = await pairTracks(
+    rapper1.artist_id,
+    rapper2.artist_id,
+  );
 
   return {
     rapper1: { ...rapper1, preview_url: preview1 },
@@ -104,5 +114,177 @@ export async function getRanking(): Promise<RankingRow[]> {
      LEFT JOIN losses l USING (artist_id)
      WHERE coalesce(w.wins, 0) + coalesce(l.losses, 0) >= 5
      ORDER BY win_rate DESC, wins DESC, monthly_listeners DESC`,
+  );
+}
+
+// Top-`size` by proven win rate (>=5 votes).
+async function topByWinRate(size: number): Promise<Rapper[]> {
+  return query<Rapper>(
+    `WITH wins AS (
+       SELECT winner_id AS artist_id, count(*) AS wins FROM raw.results GROUP BY 1
+     ),
+     losses AS (
+       SELECT loser_id AS artist_id, count(*) AS losses FROM raw.results GROUP BY 1
+     )
+     SELECT r.artist_id, r.artist_name, r.monthly_listeners, r.followers, r.world_rank, r.image_url
+     FROM mart.rappers_filtered r
+     LEFT JOIN wins w USING (artist_id)
+     LEFT JOIN losses l USING (artist_id)
+     WHERE coalesce(w.wins, 0) + coalesce(l.losses, 0) >= 5
+     ORDER BY
+       coalesce(w.wins, 0)::double / nullif(coalesce(w.wins, 0) + coalesce(l.losses, 0), 0) DESC,
+       coalesce(w.wins, 0) DESC
+     LIMIT ?`,
+    [size],
+  );
+}
+
+// All eligible rappers ordered by popularity (used both as the "top by
+// listeners" half of the bracket pool and to backfill it when the win-rate
+// list is short).
+async function byListeners(): Promise<Rapper[]> {
+  return query<Rapper>(
+    `SELECT artist_id, artist_name, monthly_listeners, followers, world_rank, image_url
+     FROM mart.rappers_filtered
+     ORDER BY monthly_listeners DESC`,
+  );
+}
+
+function shuffle<T>(items: T[]): T[] {
+  const copy = [...items];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
+// 1 in 8 slots (min 1) are wildcards -- random eligible artists outside the
+// blended top cut, so repeated brackets of the same size aren't identical.
+function wildcardCount(size: number): number {
+  return Math.max(1, Math.floor(size / 8));
+}
+
+// Bracket seeding pool: merge the top-`size` by proven win rate with the
+// top-`size` by listeners (fans of both a "who actually wins battles" and a
+// "who's the biggest name" view of the field), dedup, and blend the two
+// rankings into one seed order. Being highly ranked on either axis pulls an
+// artist toward a low (better) seed; absence from a list is penalized as if
+// ranked last in it.
+//
+// A handful of the worst seeds are reserved as wildcards -- randomly drawn
+// from the rest of the eligible pool -- so the field has some variety run to
+// run instead of being 100% deterministic off the same underlying data.
+export async function getBracketPool(size: number): Promise<SeedEntry[]> {
+  const [winRateRanked, listenersRanked] = await Promise.all([
+    topByWinRate(size),
+    byListeners(),
+  ]);
+
+  if (listenersRanked.length < size) {
+    throw new Error(
+      `Not enough eligible rappers for a ${size}-artist bracket (only ${listenersRanked.length} qualify).`,
+    );
+  }
+
+  const posByWinRate = new Map(winRateRanked.map((r, i) => [r.artist_id, i]));
+  const posByListeners = new Map(listenersRanked.map((r, i) => [r.artist_id, i]));
+  const byId = new Map<string, Rapper>();
+  for (const r of [...winRateRanked, ...listenersRanked]) {
+    if (!byId.has(r.artist_id)) byId.set(r.artist_id, r);
+  }
+
+  // byId spans the whole eligible pool (byListeners has no LIMIT), and that
+  // pool is >= size (checked above), so there's always enough left over here.
+  const wildcards = wildcardCount(size);
+  const coreSize = size - wildcards;
+
+  const blended = [...byId.values()]
+    .map((r) => ({
+      rapper: r,
+      score:
+        (posByWinRate.get(r.artist_id) ?? size) + (posByListeners.get(r.artist_id) ?? size),
+    }))
+    .sort((a, b) => a.score - b.score || b.rapper.monthly_listeners - a.rapper.monthly_listeners);
+
+  const core = blended.slice(0, coreSize).map(({ rapper }) => rapper);
+  const coreIds = new Set(core.map((r) => r.artist_id));
+  const remainder = blended.map(({ rapper }) => rapper).filter((r) => !coreIds.has(r.artist_id));
+  const wildcardPicks = shuffle(remainder).slice(0, wildcards);
+
+  return [...core, ...wildcardPicks].map((rapper, i) => ({
+    ...rapper,
+    preview_url: null,
+    seed: i + 1,
+  }));
+}
+
+// Bracket picks are recorded separately from raw.results: bracket matchups
+// are seeded, not random, so folding them into the head-to-head ledger would
+// skew that leaderboard's win rate. `matchesInRound` is however many matches
+// were being played in that round (2 = Final Four, 1 = the Final) -- enough
+// for getBracketRanking to derive championships/Final Four appearances.
+export async function recordBracketVote(
+  runId: string,
+  matchesInRound: number,
+  winnerId: string,
+  loserId: string,
+): Promise<void> {
+  // Defensive create: the ingestion job (ingestion/load_rappers.py) bootstraps
+  // this table too, but only runs on its daily schedule -- don't make a
+  // same-day deploy of bracket mode 500 until the next run.
+  await execute(`CREATE SCHEMA IF NOT EXISTS raw`);
+  await execute(
+    `CREATE TABLE IF NOT EXISTS raw.bracket_results (
+       run_id VARCHAR, matches_in_round BIGINT, winner_id VARCHAR, loser_id VARCHAR, voted_at TIMESTAMP
+     )`,
+  );
+  await execute(
+    `INSERT INTO raw.bracket_results (run_id, matches_in_round, winner_id, loser_id, voted_at)
+     VALUES (?, ?, ?, ?, now()::TIMESTAMP)`,
+    [runId, matchesInRound, winnerId, loserId],
+  );
+}
+
+// Bracket standings: proven bracket win rate + championships (winner of the
+// matches_in_round=1 "Final" row) + Final Four appearances (either side of a
+// matches_in_round=2 "semifinal" row -- both semifinalists count, win or lose).
+export async function getBracketRanking(): Promise<BracketRankingRow[]> {
+  return query<BracketRankingRow>(
+    `WITH wins AS (
+       SELECT winner_id AS artist_id, count(*) AS wins FROM raw.bracket_results GROUP BY 1
+     ),
+     losses AS (
+       SELECT loser_id AS artist_id, count(*) AS losses FROM raw.bracket_results GROUP BY 1
+     ),
+     championships AS (
+       SELECT winner_id AS artist_id, count(*) AS championships
+       FROM raw.bracket_results WHERE matches_in_round = 1 GROUP BY 1
+     ),
+     final_four_appearances AS (
+       SELECT artist_id, count(*) AS final_fours FROM (
+         SELECT winner_id AS artist_id FROM raw.bracket_results WHERE matches_in_round = 2
+         UNION ALL
+         SELECT loser_id AS artist_id FROM raw.bracket_results WHERE matches_in_round = 2
+       ) GROUP BY 1
+     )
+     SELECT
+       r.artist_id,
+       r.artist_name,
+       r.monthly_listeners,
+       r.image_url,
+       coalesce(c.championships, 0) AS championships,
+       coalesce(f.final_fours, 0) AS final_fours,
+       coalesce(w.wins, 0) AS wins,
+       coalesce(l.losses, 0) AS losses,
+       coalesce(w.wins, 0)::double
+         / nullif(coalesce(w.wins, 0) + coalesce(l.losses, 0), 0) AS win_rate
+     FROM mart.rappers r
+     LEFT JOIN wins w USING (artist_id)
+     LEFT JOIN losses l USING (artist_id)
+     LEFT JOIN championships c USING (artist_id)
+     LEFT JOIN final_four_appearances f USING (artist_id)
+     WHERE coalesce(w.wins, 0) + coalesce(l.losses, 0) > 0
+     ORDER BY championships DESC, final_fours DESC, win_rate DESC, wins DESC`,
   );
 }
