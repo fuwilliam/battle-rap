@@ -82,6 +82,7 @@ export function RapperCard({
   dimmed,
   disabled,
   onPick,
+  autoplay = false,
 }: {
   rapper: Rapper;
   tracks: Track[];
@@ -89,6 +90,7 @@ export function RapperCard({
   dimmed: boolean;
   disabled: boolean;
   onPick: () => void;
+  autoplay?: boolean;
 }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const fadeRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -130,6 +132,16 @@ export function RapperCard({
   useEffect(() => {
     busHandle.current.pause = stopPreview;
   }, [stopPreview]);
+
+  // e.g. the bracket champion screen -- plays without waiting for a hover.
+  // Relies on the "sticky" user-activation the page already has from the
+  // click that got here, so browsers don't block the programmatic play().
+  useEffect(() => {
+    if (!autoplay) return;
+    startPreview();
+    return stopPreview;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoplay, rapper.artist_id]);
 
   useEffect(
     () => () => {

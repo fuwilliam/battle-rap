@@ -109,11 +109,14 @@ export function BracketArena({
   const current = findCurrent(state.rounds);
   const currentMatch = current ? state.rounds[current.roundIdx][current.matchIdx] : null;
   const finalRound = state.rounds[state.rounds.length - 1];
+  const finalMatch = finalRound.length === 1 ? finalRound[0] : null;
+  // SeedEntry never carries a preview_url (getBracketPool doesn't fetch
+  // tracks up front) -- pull it from the final match's own fetched preview.
   const champion =
-    !current && finalRound.length === 1 && finalRound[0].winner
-      ? finalRound[0].winner === finalRound[0].a.artist_id
-        ? finalRound[0].a
-        : finalRound[0].b
+    !current && finalMatch?.winner
+      ? finalMatch.winner === finalMatch.a.artist_id
+        ? { ...finalMatch.a, preview_url: finalMatch.previewA ?? null }
+        : { ...finalMatch.b, preview_url: finalMatch.previewB ?? null }
       : null;
 
   // Load tracks for the current match (and prefetch the next one in this
@@ -170,8 +173,9 @@ export function BracketArena({
             tracks={[]}
             picked
             dimmed={false}
-            disabled
+            disabled={false}
             onPick={() => {}}
+            autoplay
           />
         </div>
 
