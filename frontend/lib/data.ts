@@ -117,8 +117,10 @@ export async function getRanking(): Promise<RankingRow[]> {
   );
 }
 
-// Top-`size` by proven win rate (>=5 votes).
-async function topByWinRate(size: number): Promise<Rapper[]> {
+// Every artist with a proven win-rate track record (>=5 votes), best first.
+// Unbounded (unlike byListeners it's normally a small subset) so getBracketPool
+// can compute a true percentile rather than one truncated to the bracket size.
+async function byWinRate(): Promise<Rapper[]> {
   return query<Rapper>(
     `WITH wins AS (
        SELECT winner_id AS artist_id, count(*) AS wins FROM raw.results GROUP BY 1
@@ -133,9 +135,7 @@ async function topByWinRate(size: number): Promise<Rapper[]> {
      WHERE coalesce(w.wins, 0) + coalesce(l.losses, 0) >= 5
      ORDER BY
        coalesce(w.wins, 0)::double / nullif(coalesce(w.wins, 0) + coalesce(l.losses, 0), 0) DESC,
-       coalesce(w.wins, 0) DESC
-     LIMIT ?`,
-    [size],
+       coalesce(w.wins, 0) DESC`,
   );
 }
 
@@ -165,21 +165,24 @@ function wildcardCount(size: number): number {
   return Math.max(1, Math.floor(size / 8));
 }
 
-// Bracket seeding pool: merge the top-`size` by proven win rate with the
-// top-`size` by listeners (fans of both a "who actually wins battles" and a
-// "who's the biggest name" view of the field), dedup, and blend the two
-// rankings into one seed order. Being highly ranked on either axis pulls an
-// artist toward a low (better) seed; absence from a list is penalized as if
-// ranked last in it.
-//
-// A handful of the worst seeds are reserved as wildcards -- randomly drawn
-// from the rest of the eligible pool -- so the field has some variety run to
-// run instead of being 100% deterministic off the same underlying data.
+// Win rate matters more than raw popularity for seeding: a proven track
+// record should beat a big streaming number with no votes behind it. Weights
+// are applied to PERCENTILE position within each list (not raw rank index) --
+// mixing raw indices was the bug: the win-rate list is small (only artists
+// with >=5 votes) while the listeners list spans the whole eligible pool
+// (hundreds of artists), so an untested-but-popular artist's raw listeners
+// rank could dwarf a proven battler's raw win-rate rank even though the
+// battler was actually near the top of a real (if small) leaderboard.
+const WEIGHT_WIN_RATE = 0.65;
+const WEIGHT_LISTENERS = 0.35;
+
+// Bracket seeding pool: blend the win-rate leaderboard with the listeners
+// leaderboard into one seed order (win rate weighted more heavily -- see
+// above), dedup, then reserve a handful of the worst seeds as wildcards --
+// randomly drawn from the rest of the eligible pool -- so the field has some
+// variety run to run instead of being 100% deterministic off the same data.
 export async function getBracketPool(size: number): Promise<SeedEntry[]> {
-  const [winRateRanked, listenersRanked] = await Promise.all([
-    topByWinRate(size),
-    byListeners(),
-  ]);
+  const [winRateRanked, listenersRanked] = await Promise.all([byWinRate(), byListeners()]);
 
   if (listenersRanked.length < size) {
     throw new Error(
@@ -189,21 +192,26 @@ export async function getBracketPool(size: number): Promise<SeedEntry[]> {
 
   const posByWinRate = new Map(winRateRanked.map((r, i) => [r.artist_id, i]));
   const posByListeners = new Map(listenersRanked.map((r, i) => [r.artist_id, i]));
-  const byId = new Map<string, Rapper>();
-  for (const r of [...winRateRanked, ...listenersRanked]) {
-    if (!byId.has(r.artist_id)) byId.set(r.artist_id, r);
-  }
+  // listenersRanked already spans every eligible artist, so it alone defines
+  // the full pool -- winRateRanked is a subset and adds nothing new here.
+  const byId = new Map(listenersRanked.map((r) => [r.artist_id, r]));
 
   // byId spans the whole eligible pool (byListeners has no LIMIT), and that
   // pool is >= size (checked above), so there's always enough left over here.
   const wildcards = wildcardCount(size);
   const coreSize = size - wildcards;
 
+  // position -> [0,1], 0 = best. Absence from win-rate (never proven) scores
+  // as the worst possible percentile rather than a fixed small penalty.
+  const pct = (pos: number | undefined, poolSize: number) =>
+    poolSize <= 1 || pos === undefined ? 1 : pos / (poolSize - 1);
+
   const blended = [...byId.values()]
     .map((r) => ({
       rapper: r,
       score:
-        (posByWinRate.get(r.artist_id) ?? size) + (posByListeners.get(r.artist_id) ?? size),
+        WEIGHT_WIN_RATE * pct(posByWinRate.get(r.artist_id), winRateRanked.length) +
+        WEIGHT_LISTENERS * pct(posByListeners.get(r.artist_id), listenersRanked.length),
     }))
     .sort((a, b) => a.score - b.score || b.rapper.monthly_listeners - a.rapper.monthly_listeners);
 
