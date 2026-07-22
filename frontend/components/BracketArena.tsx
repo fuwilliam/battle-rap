@@ -4,6 +4,7 @@ import { useEffect, useReducer, useState } from "react";
 import type { SeedEntry, Track } from "@/lib/types";
 import { pairEntrants, roundLabel } from "@/lib/bracket";
 import { RapperCard } from "@/components/RapperCard";
+import { BracketTree } from "@/components/BracketTree";
 
 type Match = {
   a: SeedEntry;
@@ -161,9 +162,9 @@ export function BracketArena({
 
   if (champion) {
     return (
-      <section className="mx-auto max-w-md px-4 py-16 text-center">
+      <section className="mx-auto max-w-5xl px-4 py-16 text-center">
         <p className="mb-4 text-sm uppercase tracking-widest text-accent">Champion</p>
-        <div className="animate-crown">
+        <div className="animate-crown mx-auto max-w-md">
           <RapperCard
             rapper={champion}
             tracks={[]}
@@ -173,6 +174,11 @@ export function BracketArena({
             onPick={() => {}}
           />
         </div>
+
+        <div className="mt-12">
+          <BracketTree rounds={state.rounds} />
+        </div>
+
         <button
           type="button"
           onClick={onPlayAgain}
