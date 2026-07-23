@@ -1,15 +1,30 @@
 "use client";
 
 import { useState } from "react";
-import type { SeedEntry } from "@/lib/types";
+import type { BracketMode, SeedEntry } from "@/lib/types";
 
 const SIZES = [16, 32, 64] as const;
+
+const MODES: { key: BracketMode; label: string; description: string }[] = [
+  {
+    key: "major_league",
+    label: "Major League",
+    description:
+      "Seeded by proven win rate and popularity, with a few wildcard slots and some shuffling for variety.",
+  },
+  {
+    key: "random",
+    label: "Random",
+    description: "No seeding at all -- a genuinely random draw from the eligible pool every time.",
+  },
+];
 
 export function BracketSizePicker({
   onReady,
 }: {
   onReady: (entrants: SeedEntry[]) => void;
 }) {
+  const [mode, setMode] = useState<BracketMode>("major_league");
   const [loadingSize, setLoadingSize] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -17,7 +32,7 @@ export function BracketSizePicker({
     setLoadingSize(size);
     setError(null);
     try {
-      const res = await fetch(`/api/bracket?size=${size}`, { cache: "no-store" });
+      const res = await fetch(`/api/bracket?size=${size}&mode=${mode}`, { cache: "no-store" });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error ?? "Failed to build bracket");
       onReady(data.entrants);
@@ -32,7 +47,25 @@ export function BracketSizePicker({
       <h1 className="text-3xl font-bold">Bracket Mode</h1>
       <p className="mt-2 text-white/60">Pick a field size and crown a champion.</p>
 
-      <div className="mt-8 flex justify-center gap-4">
+      <div className="mt-8 flex justify-center gap-2">
+        {MODES.map((m) => (
+          <button
+            key={m.key}
+            type="button"
+            title={m.description}
+            onClick={() => setMode(m.key)}
+            className={`rounded-full border px-4 py-1.5 text-sm font-medium transition ${
+              mode === m.key
+                ? "border-accent bg-accent/10 text-accent"
+                : "border-white/10 text-white/60 hover:text-white"
+            }`}
+          >
+            {m.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-6 flex justify-center gap-4">
         {SIZES.map((size) => (
           <button
             key={size}

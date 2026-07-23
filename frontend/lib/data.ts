@@ -1,5 +1,5 @@
 import { execute, query } from "./motherduck";
-import type { BracketRankingRow, Matchup, Rapper, RankingRow, SeedEntry, Track } from "./types";
+import type { BracketMode, BracketRankingRow, Matchup, Rapper, RankingRow, SeedEntry, Track } from "./types";
 
 // Eligibility (flag_core_genre + monthly_listeners >= 1M + followers >= 100k)
 // is encoded in the dbt model mart.rappers_filtered -- one source of truth.
@@ -194,12 +194,36 @@ const WEIGHT_LISTENERS = 0.35;
 // the very top; small enough that a rank-500 artist can't leapfrog into #1.
 const SEED_JITTER = 0.25;
 
+// "Major League" (blended, seeded) vs "Random" (no seeding at all, just a
+// random draw from the eligible pool) -- see getBracketPool below.
+export async function getBracketPool(
+  size: number,
+  mode: BracketMode = "major_league",
+): Promise<SeedEntry[]> {
+  return mode === "random" ? getRandomPool(size) : getMajorLeaguePool(size);
+}
+
+// No seeding whatsoever: a straight random draw from every eligible artist,
+// each assigned an arbitrary (shuffled) seed 1..size just so the standard
+// bracket-pairing math has something to key off of.
+async function getRandomPool(size: number): Promise<SeedEntry[]> {
+  const pool = await eligibleRappers();
+  if (pool.length < size) {
+    throw new Error(
+      `Not enough eligible rappers for a ${size}-artist bracket (only ${pool.length} qualify).`,
+    );
+  }
+  return shuffle(pool)
+    .slice(0, size)
+    .map((rapper, i) => ({ ...rapper, preview_url: null, seed: i + 1 }));
+}
+
 // Bracket seeding pool: blend the win-rate leaderboard with the listeners
 // leaderboard into one seed order (win rate weighted more heavily -- see
 // above), dedup, then reserve a handful of the worst seeds as wildcards --
 // randomly drawn from the rest of the eligible pool -- so the field has some
 // variety run to run instead of being 100% deterministic off the same data.
-export async function getBracketPool(size: number): Promise<SeedEntry[]> {
+async function getMajorLeaguePool(size: number): Promise<SeedEntry[]> {
   const [winRateRanked, listenersRanked] = await Promise.all([byWinRate(), byListeners()]);
 
   if (listenersRanked.length < size) {

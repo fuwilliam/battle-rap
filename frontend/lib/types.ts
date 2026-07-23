@@ -35,6 +35,8 @@ export type RankingRow = {
 
 export type SeedEntry = Rapper & { seed: number };
 
+export type BracketMode = "major_league" | "random";
+
 export type BracketRankingRow = {
   artist_id: string;
   artist_name: string;
