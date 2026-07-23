@@ -32,3 +32,19 @@ export type RankingRow = {
   losses: number;
   win_rate: number;
 };
+
+export type SeedEntry = Rapper & { seed: number };
+
+export type BracketMode = "major_league" | "random";
+
+export type BracketRankingRow = {
+  artist_id: string;
+  artist_name: string;
+  monthly_listeners: number;
+  image_url: string | null;
+  championships: number;
+  final_fours: number;
+  wins: number;
+  losses: number;
+  win_rate: number;
+};
