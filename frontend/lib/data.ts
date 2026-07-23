@@ -296,7 +296,7 @@ const WEIGHT_LISTENERS = 0.35;
 // the very top; small enough that a rank-500 artist can't leapfrog into #1.
 const SEED_JITTER = 0.25;
 
-// "Major League" (blended, seeded) vs "Random" (no seeding at all, just a
+// "Ranked" (blended, seeded) vs "Random" (no seeding at all, just a
 // random draw from the eligible pool) -- see getBracketPool below.
 export async function getBracketPool(
   size: number,

@@ -8,7 +8,7 @@ const SIZES = [16, 32, 64] as const;
 const MODES: { key: BracketMode; label: string; description: string }[] = [
   {
     key: "major_league",
-    label: "Major League",
+    label: "Ranked",
     description:
       "Seeded by proven win rate and popularity, with a few wildcard slots and some shuffling for variety.",
   },
@@ -47,6 +47,12 @@ export function BracketSizePicker({
     <section className="mx-auto max-w-lg px-4 py-16 text-center">
       <h1 className="text-3xl font-bold">Bracket Mode</h1>
       <p className="mt-2 text-white/60">Pick a field size and crown a champion.</p>
+
+      {mode === "major_league" && (
+        <p className="mt-4 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/60">
+          ! Bored of the same matchups? Discover new artists in Random mode!
+        </p>
+      )}
 
       <div className="mt-8 flex justify-center gap-2">
         {MODES.map((m) => (
