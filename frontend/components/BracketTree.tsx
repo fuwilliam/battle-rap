@@ -10,8 +10,8 @@ const COL_GAP = 48; // horizontal space between columns, reserved for connectors
 const COL_W = BOX_W + COL_GAP;
 const LABEL_H = 28;
 const LINE_COLOR = "rgba(255,255,255,0.15)";
-const PATH_COLOR = "#22c55e";
-const PATH_GLOW = "0 0 6px rgba(34,197,94,0.85)";
+const PATH_COLOR = "#4ade80";
+const PATH_GLOW = "0 0 4px 1px #4ade80, 0 0 12px 3px rgba(74,222,128,0.8), 0 0 24px 7px rgba(74,222,128,0.5)";
 
 function Slot({ entry, won, champion }: { entry: SeedEntry; won: boolean; champion: boolean }) {
   return (
@@ -24,14 +24,16 @@ function Slot({ entry, won, champion }: { entry: SeedEntry; won: boolean; champi
         className="h-6 w-6 shrink-0 rounded-full object-cover ring-1 ring-white/10"
       />
       <span
-        className={`truncate text-sm ${
+        className={`truncate text-sm ${champion ? "font-semibold" : won ? "font-semibold text-white" : "text-white/50"}`}
+        style={
           champion
-            ? "rounded px-1.5 py-0.5 font-semibold text-black"
-            : won
-              ? "font-semibold text-white"
-              : "text-white/50"
-        }`}
-        style={champion ? { background: "#facc15", boxShadow: "0 0 10px rgba(250,204,21,0.6)" } : undefined}
+            ? {
+                color: "#fde047",
+                WebkitTextStroke: "0.4px #a16207",
+                textShadow: "0 0 6px rgba(253,224,71,0.65)",
+              }
+            : undefined
+        }
       >
         {entry.artist_name}
       </span>
@@ -67,27 +69,35 @@ function championIndexByRound(rounds: TreeMatch[][], championId: string | undefi
   return idx;
 }
 
+// `length` runs along `axis` (the line's direction); thickness is fixed and
+// bumped up (with a layered glow) when the segment is on the champion's path,
+// which is why position/size are computed here rather than passed as raw
+// width/height -- a thicker line needs to stay centered on the same coordinate.
 function Line({
   left,
   top,
-  width,
-  height,
+  length,
+  axis,
   onPath,
 }: {
   left: number;
   top: number;
-  width: number;
-  height: number;
+  length: number;
+  axis: "x" | "y";
   onPath: boolean;
 }) {
+  const thickness = onPath ? 3 : 1;
+  const offset = (thickness - 1) / 2;
+  const size =
+    axis === "x"
+      ? { left, top: top - offset, width: length, height: thickness }
+      : { left: left - offset, top, width: thickness, height: length };
+
   return (
     <div
       className="absolute"
       style={{
-        left,
-        top,
-        width,
-        height,
+        ...size,
         background: onPath ? PATH_COLOR : LINE_COLOR,
         boxShadow: onPath ? PATH_GLOW : undefined,
       }}
@@ -137,23 +147,23 @@ export function BracketTree({ rounds }: { rounds: TreeMatch[][] }) {
             const outOnPath = champIndex[r] === i;
             return (
               <div key={`conn-${r}-${i}`}>
-                <Line left={xLeft} top={LABEL_H + yTop} width={COL_GAP / 2} height={1} onPath={topOnPath} />
-                <Line left={xLeft} top={LABEL_H + yBot} width={COL_GAP / 2} height={1} onPath={botOnPath} />
+                <Line left={xLeft} top={LABEL_H + yTop} length={COL_GAP / 2} axis="x" onPath={topOnPath} />
+                <Line left={xLeft} top={LABEL_H + yBot} length={COL_GAP / 2} axis="x" onPath={botOnPath} />
                 <Line
                   left={xMid}
                   top={LABEL_H + Math.min(yTop, yMid)}
-                  width={1}
-                  height={Math.abs(yMid - yTop)}
+                  length={Math.abs(yMid - yTop)}
+                  axis="y"
                   onPath={topOnPath}
                 />
                 <Line
                   left={xMid}
                   top={LABEL_H + Math.min(yMid, yBot)}
-                  width={1}
-                  height={Math.abs(yBot - yMid)}
+                  length={Math.abs(yBot - yMid)}
+                  axis="y"
                   onPath={botOnPath}
                 />
-                <Line left={xMid} top={LABEL_H + yMid} width={COL_GAP / 2} height={1} onPath={outOnPath} />
+                <Line left={xMid} top={LABEL_H + yMid} length={COL_GAP / 2} axis="x" onPath={outOnPath} />
               </div>
             );
           });
