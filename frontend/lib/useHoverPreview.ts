@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { getMasterVolume, subscribeMasterVolume } from "./masterVolume";
 import { audioBus, type Pausable } from "./spotifyEmbed";
 
 // Fades a 30s preview clip in on hover (or on demand via `autoplay`) and back
@@ -47,7 +48,7 @@ export function useHoverPreview(url: string | null, autoplay = false) {
       .play()
       .then(() => {
         setIsPlaying(true);
-        fadeTo(0.85);
+        fadeTo(getMasterVolume());
       })
       .catch(() => {}); // ignore autoplay blocks
   }, [url, fadeTo]);
@@ -56,6 +57,16 @@ export function useHoverPreview(url: string | null, autoplay = false) {
   useEffect(() => {
     busHandle.current.pause = stop;
   }, [stop]);
+
+  // Apply volume changes live -- e.g. the user drags the navbar slider while
+  // a clip is already playing -- instead of waiting for the next hover.
+  useEffect(() => {
+    if (!isPlaying) return;
+    return subscribeMasterVolume((v) => {
+      const el = audioRef.current;
+      if (el) el.volume = v;
+    });
+  }, [isPlaying]);
 
   // e.g. the bracket champion screen -- plays without waiting for a hover.
   // Relies on the "sticky" user-activation the page already has from the

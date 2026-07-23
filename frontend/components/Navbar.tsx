@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { VolumeControl } from "./VolumeControl";
 
 const links = [
   { href: "/ranking", label: "Ranking" },
@@ -47,6 +48,7 @@ export function Navbar() {
             <span className="text-lg">Battle Rap</span>
           </Link>
           <ModeToggle />
+          <VolumeControl />
         </div>
         <ul className="flex items-center gap-1 text-sm">
           {links.map((l) => (
