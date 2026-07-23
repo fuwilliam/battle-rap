@@ -10,28 +10,37 @@ async function eligibleRappers(): Promise<Rapper[]> {
   );
 }
 
+// Fetch 5 so the preview clip has variety to pick from; only the top 3 are
+// ever shown as embeds (sliced in pairTracks below).
 async function topTracks(artistId: string): Promise<Track[]> {
   return query<Track>(
     `SELECT track_id, artist_id, track_name, track_rank, track_url
      FROM mart.top_tracks
-     WHERE artist_id = ? AND track_rank <= 3
+     WHERE artist_id = ? AND track_rank <= 5
      ORDER BY track_rank`,
     [artistId],
   );
 }
 
-// Top 3 tracks + hover-preview clip for a specific pair of artists (used for
-// both the random head-to-head matchup and a single bracket match).
+function randomTrackId(tracks: Track[]): string | undefined {
+  if (tracks.length === 0) return undefined;
+  return tracks[Math.floor(Math.random() * tracks.length)].track_id;
+}
+
+// Top 3 tracks (for the visible embeds) + a hover-preview clip randomly
+// picked from the top 5 (so it's not the same snippet every single time) for
+// a specific pair of artists -- used for both the random head-to-head
+// matchup and a single bracket match.
 export async function pairTracks(
   id1: string,
   id2: string,
 ): Promise<{ tracks1: Track[]; preview1: string | null; tracks2: Track[]; preview2: string | null }> {
-  const [tracks1, tracks2] = await Promise.all([topTracks(id1), topTracks(id2)]);
+  const [top1, top2] = await Promise.all([topTracks(id1), topTracks(id2)]);
   const [preview1, preview2] = await Promise.all([
-    topPreviewUrl(tracks1[0]?.track_id),
-    topPreviewUrl(tracks2[0]?.track_id),
+    topPreviewUrl(randomTrackId(top1)),
+    topPreviewUrl(randomTrackId(top2)),
   ]);
-  return { tracks1, preview1, tracks2, preview2 };
+  return { tracks1: top1.slice(0, 3), preview1, tracks2: top2.slice(0, 3), preview2 };
 }
 
 // Pick two distinct random eligible rappers + their top tracks.
