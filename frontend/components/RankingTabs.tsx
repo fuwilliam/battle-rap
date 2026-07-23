@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import type { BracketRankingRow, RankingRow } from "@/lib/types";
 import { RankingTable } from "@/components/RankingTable";
 import { BracketRankingTable } from "@/components/BracketRankingTable";
@@ -19,7 +20,9 @@ export function RankingTabs({
   headToHead: RankingRow[];
   bracket: BracketRankingRow[];
 }) {
-  const [tab, setTab] = useState<Tab>("head2head");
+  // supports deep-linking straight to a tab, e.g. /ranking?tab=bracket
+  const initialTab = useSearchParams().get("tab") === "bracket" ? "bracket" : "head2head";
+  const [tab, setTab] = useState<Tab>(initialTab);
 
   return (
     <>

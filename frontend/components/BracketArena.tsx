@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useReducer, useState } from "react";
+import Link from "next/link";
 import type { SeedEntry, Track } from "@/lib/types";
 import { pairEntrants, roundLabel } from "@/lib/bracket";
 import { RapperCard } from "@/components/RapperCard";
@@ -179,17 +180,25 @@ export function BracketArena({
           />
         </div>
 
+        <div className="mt-6 flex justify-center gap-3">
+          <button
+            type="button"
+            onClick={onPlayAgain}
+            className="rounded-full border border-accent/60 px-6 py-2 text-sm font-semibold text-accent transition hover:bg-accent hover:text-black"
+          >
+            Play again
+          </button>
+          <Link
+            href="/ranking?tab=bracket"
+            className="rounded-full border border-white/10 px-6 py-2 text-sm font-semibold text-white/70 transition hover:border-white/30 hover:text-white"
+          >
+            View bracket rankings
+          </Link>
+        </div>
+
         <div className="mt-12">
           <BracketTree rounds={state.rounds} />
         </div>
-
-        <button
-          type="button"
-          onClick={onPlayAgain}
-          className="mt-8 rounded-full border border-accent/60 px-6 py-2 text-sm font-semibold text-accent transition hover:bg-accent hover:text-black"
-        >
-          Play again
-        </button>
       </section>
     );
   }
