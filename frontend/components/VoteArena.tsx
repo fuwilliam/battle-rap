@@ -53,7 +53,7 @@ export function VoteArena({ initial }: { initial: Matchup }) {
 
   return (
     <section className="mx-auto max-w-5xl px-4 py-8">
-      <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-4 sm:gap-6">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-start gap-4 sm:gap-6">
         <RapperCard
           rapper={rapper1}
           tracks={tracks1}

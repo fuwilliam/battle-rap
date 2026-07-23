@@ -265,7 +265,7 @@ export function BracketArena({
       <p className="mb-6 text-center text-sm uppercase tracking-widest text-white/50">
         {roundLabel(remainingMatches)} · #{currentMatch.a.seed} vs #{currentMatch.b.seed}
       </p>
-      <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-4 sm:gap-6">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-start gap-4 sm:gap-6">
         <RapperCard
           rapper={{
             ...currentMatch.a,

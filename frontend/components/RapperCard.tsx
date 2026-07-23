@@ -27,7 +27,7 @@ function TrackRow({ track }: { track: Track }) {
     <div
       onMouseEnter={start}
       onMouseLeave={stop}
-      className={`flex items-center gap-3 rounded-xl border p-2 transition duration-200 ${
+      className={`flex min-w-0 items-center gap-3 rounded-xl border p-2 transition duration-200 ${
         isPlaying ? "border-accent/60" : "border-transparent"
       }`}
       style={track.tint_color ? { backgroundColor: track.tint_color } : undefined}
@@ -81,7 +81,7 @@ export function RapperCard({
 
   return (
     <div
-      className={`flex flex-col gap-3 transition duration-300 ${dimmed ? "opacity-40" : "opacity-100"}`}
+      className={`flex min-w-0 flex-col gap-3 transition duration-300 ${dimmed ? "opacity-40" : "opacity-100"}`}
     >
       {rapper.preview_url && <audio ref={audioRef} src={rapper.preview_url} preload="none" />}
       <button
@@ -126,7 +126,7 @@ export function RapperCard({
         )}
       </button>
 
-      <div className="flex flex-col gap-2">
+      <div className="flex min-w-0 flex-col gap-2">
         {tracks.map((t) => (
           <TrackRow key={t.track_id} track={t} />
         ))}
