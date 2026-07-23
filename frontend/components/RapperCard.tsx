@@ -189,11 +189,11 @@ export function RapperCard({
           </p>
         </div>
         {isPlaying && rapper.preview_track_name && (
-          <div className="absolute left-2 top-2 flex max-w-[65%] items-center gap-1.5 rounded-full border border-accent/60 bg-black/70 px-2.5 py-1 text-xs font-semibold backdrop-blur">
+          <div className="absolute left-2 top-2 flex max-w-[49%] items-center gap-1 rounded-full border border-accent/60 bg-black/70 px-2 py-0.5 text-[10px] font-semibold backdrop-blur">
             <span className="inline-block shrink-0 animate-spin-slow leading-none">💿</span>
-            <span className="overflow-hidden whitespace-nowrap">
+            <span className="flex min-w-0 flex-1 justify-end overflow-hidden whitespace-nowrap">
               <span className="inline-block animate-marquee whitespace-nowrap">
-                Now playing: {rapper.preview_track_name} — {rapper.artist_name}
+                {rapper.preview_track_name} — {rapper.artist_name}
               </span>
             </span>
           </div>
