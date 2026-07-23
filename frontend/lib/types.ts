@@ -6,6 +6,7 @@ export type Rapper = {
   world_rank: number | null;
   image_url: string | null;
   preview_url: string | null; // 30s clip of the artist's top track (hover preview)
+  preview_track_name: string | null; // name of the track backing preview_url
 };
 
 export type Track = {

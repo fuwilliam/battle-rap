@@ -13,12 +13,15 @@ export async function GET(request: Request) {
   }
 
   try {
-    const { tracks1, preview1, tracks2, preview2 } = await pairTracks(a, b);
+    const { tracks1, preview1, previewTrackName1, tracks2, preview2, previewTrackName2 } =
+      await pairTracks(a, b);
     return Response.json({
       tracksA: tracks1,
       previewA: preview1,
+      previewTrackNameA: previewTrackName1,
       tracksB: tracks2,
       previewB: preview2,
+      previewTrackNameB: previewTrackName2,
     });
   } catch (err) {
     console.error("GET /api/bracket/tracks failed:", err);

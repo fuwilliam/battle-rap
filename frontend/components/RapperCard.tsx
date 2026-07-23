@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Rapper, Track } from "@/lib/types";
 import {
   audioBus,
@@ -95,6 +95,7 @@ export function RapperCard({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const fadeRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const busHandle = useRef<Pausable>({ pause: () => {} });
+  const [isPlaying, setIsPlaying] = useState(false);
 
   const fadeTo = useCallback((target: number, onDone?: () => void) => {
     const el = audioRef.current;
@@ -116,6 +117,7 @@ export function RapperCard({
     const el = audioRef.current;
     if (!el) return;
     audioBus.release(busHandle.current);
+    setIsPlaying(false);
     fadeTo(0, () => el.pause());
   }, [fadeTo]);
 
@@ -125,7 +127,13 @@ export function RapperCard({
     audioBus.claim(busHandle.current); // pause any playing track/clip first
     el.currentTime = 0;
     el.volume = 0;
-    el.play().then(() => fadeTo(0.85)).catch(() => {}); // ignore autoplay blocks
+    el
+      .play()
+      .then(() => {
+        setIsPlaying(true);
+        fadeTo(0.85);
+      })
+      .catch(() => {}); // ignore autoplay blocks
   }, [rapper.preview_url, fadeTo]);
 
   // the bus pauses the hover clip by calling this handle
@@ -180,6 +188,16 @@ export function RapperCard({
             {compact.format(rapper.monthly_listeners)} monthly listeners
           </p>
         </div>
+        {isPlaying && rapper.preview_track_name && (
+          <div className="absolute left-2 top-2 flex max-w-[65%] items-center gap-1.5 rounded-full border border-accent/60 bg-black/70 px-2.5 py-1 text-xs font-semibold backdrop-blur">
+            <span className="inline-block shrink-0 animate-spin-slow leading-none">💿</span>
+            <span className="overflow-hidden whitespace-nowrap">
+              <span className="inline-block animate-marquee whitespace-nowrap">
+                Now playing: {rapper.preview_track_name} — {rapper.artist_name}
+              </span>
+            </span>
+          </div>
+        )}
         {rapper.world_rank != null && rapper.world_rank > 0 && (
           <div
             title={`#${rapper.world_rank} most-streamed artist on Spotify`}

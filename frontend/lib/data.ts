@@ -22,9 +22,9 @@ async function topTracks(artistId: string): Promise<Track[]> {
   );
 }
 
-function randomTrackId(tracks: Track[]): string | undefined {
+function randomTrack(tracks: Track[]): Track | undefined {
   if (tracks.length === 0) return undefined;
-  return tracks[Math.floor(Math.random() * tracks.length)].track_id;
+  return tracks[Math.floor(Math.random() * tracks.length)];
 }
 
 // Top 3 tracks (for the visible embeds) + a hover-preview clip randomly
@@ -34,13 +34,28 @@ function randomTrackId(tracks: Track[]): string | undefined {
 export async function pairTracks(
   id1: string,
   id2: string,
-): Promise<{ tracks1: Track[]; preview1: string | null; tracks2: Track[]; preview2: string | null }> {
+): Promise<{
+  tracks1: Track[];
+  preview1: string | null;
+  previewTrackName1: string | null;
+  tracks2: Track[];
+  preview2: string | null;
+  previewTrackName2: string | null;
+}> {
   const [top1, top2] = await Promise.all([topTracks(id1), topTracks(id2)]);
+  const [pick1, pick2] = [randomTrack(top1), randomTrack(top2)];
   const [preview1, preview2] = await Promise.all([
-    topPreviewUrl(randomTrackId(top1)),
-    topPreviewUrl(randomTrackId(top2)),
+    topPreviewUrl(pick1?.track_id),
+    topPreviewUrl(pick2?.track_id),
   ]);
-  return { tracks1: top1.slice(0, 3), preview1, tracks2: top2.slice(0, 3), preview2 };
+  return {
+    tracks1: top1.slice(0, 3),
+    preview1,
+    previewTrackName1: pick1?.track_name ?? null,
+    tracks2: top2.slice(0, 3),
+    preview2,
+    previewTrackName2: pick2?.track_name ?? null,
+  };
 }
 
 // Pick two distinct random eligible rappers + their top tracks.
@@ -57,14 +72,12 @@ export async function getMatchup(): Promise<Matchup> {
   const rapper1 = pool[i];
   const rapper2 = pool[j];
 
-  const { tracks1, preview1, tracks2, preview2 } = await pairTracks(
-    rapper1.artist_id,
-    rapper2.artist_id,
-  );
+  const { tracks1, preview1, previewTrackName1, tracks2, preview2, previewTrackName2 } =
+    await pairTracks(rapper1.artist_id, rapper2.artist_id);
 
   return {
-    rapper1: { ...rapper1, preview_url: preview1 },
-    rapper2: { ...rapper2, preview_url: preview2 },
+    rapper1: { ...rapper1, preview_url: preview1, preview_track_name: previewTrackName1 },
+    rapper2: { ...rapper2, preview_url: preview2, preview_track_name: previewTrackName2 },
     tracks1,
     tracks2,
   };
@@ -215,7 +228,7 @@ async function getRandomPool(size: number): Promise<SeedEntry[]> {
   }
   return shuffle(pool)
     .slice(0, size)
-    .map((rapper, i) => ({ ...rapper, preview_url: null, seed: i + 1 }));
+    .map((rapper, i) => ({ ...rapper, preview_url: null, preview_track_name: null, seed: i + 1 }));
 }
 
 // Bracket seeding pool: blend the win-rate leaderboard with the listeners
@@ -266,6 +279,7 @@ async function getMajorLeaguePool(size: number): Promise<SeedEntry[]> {
   return [...core, ...wildcardPicks].map((rapper, i) => ({
     ...rapper,
     preview_url: null,
+    preview_track_name: null,
     seed: i + 1,
   }));
 }

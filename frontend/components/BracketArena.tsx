@@ -12,8 +12,10 @@ type Match = {
   b: SeedEntry;
   tracksA?: Track[];
   previewA?: string | null;
+  previewTrackNameA?: string | null;
   tracksB?: Track[];
   previewB?: string | null;
+  previewTrackNameB?: string | null;
   winner?: string; // artist_id
 };
 
@@ -26,8 +28,10 @@ type Action =
       matchIdx: number;
       tracksA: Track[];
       previewA: string | null;
+      previewTrackNameA: string | null;
       tracksB: Track[];
       previewB: string | null;
+      previewTrackNameB: string | null;
     }
   | { type: "pickWinner"; roundIdx: number; matchIdx: number; winnerId: string };
 
@@ -44,8 +48,10 @@ function reducer(state: BracketState, action: Action): BracketState {
                     ...m,
                     tracksA: action.tracksA,
                     previewA: action.previewA,
+                    previewTrackNameA: action.previewTrackNameA,
                     tracksB: action.tracksB,
                     previewB: action.previewB,
+                    previewTrackNameB: action.previewTrackNameB,
                   },
             ),
       ),
@@ -88,8 +94,10 @@ async function fetchTracks(idA: string, idB: string) {
   return res.json() as Promise<{
     tracksA: Track[];
     previewA: string | null;
+    previewTrackNameA: string | null;
     tracksB: Track[];
     previewB: string | null;
+    previewTrackNameB: string | null;
   }>;
 }
 
@@ -116,8 +124,16 @@ export function BracketArena({
   const champion =
     !current && finalMatch?.winner
       ? finalMatch.winner === finalMatch.a.artist_id
-        ? { ...finalMatch.a, preview_url: finalMatch.previewA ?? null }
-        : { ...finalMatch.b, preview_url: finalMatch.previewB ?? null }
+        ? {
+            ...finalMatch.a,
+            preview_url: finalMatch.previewA ?? null,
+            preview_track_name: finalMatch.previewTrackNameA ?? null,
+          }
+        : {
+            ...finalMatch.b,
+            preview_url: finalMatch.previewB ?? null,
+            preview_track_name: finalMatch.previewTrackNameB ?? null,
+          }
       : null;
 
   // Load tracks for the current match (and prefetch the next one in this
@@ -214,7 +230,11 @@ export function BracketArena({
       </p>
       <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-4 sm:gap-6">
         <RapperCard
-          rapper={{ ...currentMatch.a, preview_url: currentMatch.previewA ?? null }}
+          rapper={{
+            ...currentMatch.a,
+            preview_url: currentMatch.previewA ?? null,
+            preview_track_name: currentMatch.previewTrackNameA ?? null,
+          }}
           tracks={currentMatch.tracksA ?? []}
           picked={picked === currentMatch.a.artist_id}
           dimmed={picked !== null && picked !== currentMatch.a.artist_id}
@@ -223,7 +243,11 @@ export function BracketArena({
         />
         <div className="self-center pt-24 text-2xl font-bold text-white/50">vs</div>
         <RapperCard
-          rapper={{ ...currentMatch.b, preview_url: currentMatch.previewB ?? null }}
+          rapper={{
+            ...currentMatch.b,
+            preview_url: currentMatch.previewB ?? null,
+            preview_track_name: currentMatch.previewTrackNameB ?? null,
+          }}
           tracks={currentMatch.tracksB ?? []}
           picked={picked === currentMatch.b.artist_id}
           dimmed={picked !== null && picked !== currentMatch.b.artist_id}
