@@ -10,13 +10,20 @@ async function eligibleRappers(): Promise<Rapper[]> {
   );
 }
 
-// Fetch 5 so the preview clip has variety to pick from; only the top 3 are
-// ever shown as embeds (sliced in pairTracks below).
+// A 64-artist bracket runs 6 rounds, so a champion needs up to 6 distinct
+// hover-preview picks -- POOL_SIZE has to comfortably clear that (with a
+// couple spare so even the last round or two still has a real choice).
+// VISIBLE_COUNT is how many of those are rendered as TrackRow cards; native
+// rows are cheap (no iframe), so this can run higher than the old Spotify
+// embed's 3 without a real performance cost.
+const POOL_SIZE = 8;
+const VISIBLE_COUNT = 5;
+
 async function topTracks(artistId: string): Promise<Track[]> {
   return query<Track>(
     `SELECT track_id, artist_id, track_name, track_rank, track_url
      FROM mart.top_tracks
-     WHERE artist_id = ? AND track_rank <= 5
+     WHERE artist_id = ? AND track_rank <= ${POOL_SIZE}
      ORDER BY track_rank`,
     [artistId],
   );
@@ -24,8 +31,8 @@ async function topTracks(artistId: string): Promise<Track[]> {
 
 // excludeIds lets a caller avoid repeating a preview clip already played
 // (e.g. the same artist advancing through multiple bracket rounds) -- if
-// every track's been excluded already (all 5 seen), fall back to the full
-// pool rather than picking nothing.
+// every track's been excluded already (all POOL_SIZE seen), fall back to the
+// full pool rather than picking nothing.
 function randomTrack(tracks: Track[], excludeIds: string[] = []): Track | undefined {
   const pool = excludeIds.length > 0 ? tracks.filter((t) => !excludeIds.includes(t.track_id)) : tracks;
   const candidates = pool.length > 0 ? pool : tracks;
@@ -33,11 +40,12 @@ function randomTrack(tracks: Track[], excludeIds: string[] = []): Track | undefi
   return candidates[Math.floor(Math.random() * candidates.length)];
 }
 
-// Top 3 tracks (for the visible embeds) + a hover-preview clip randomly
-// picked from the top 5 (so it's not the same snippet every single time) for
-// a specific pair of artists -- used for both the random head-to-head
-// matchup and a single bracket match. exclude1/exclude2 are track ids
-// already played for that artist earlier in the same run (bracket mode only).
+// Top VISIBLE_COUNT tracks (rendered as native TrackRow cards, not Spotify
+// iframes) + a hover-preview clip randomly picked from the full POOL_SIZE
+// pool (so it's not the same snippet every single time) for a specific pair
+// of artists -- used for both the random head-to-head matchup and a single
+// bracket match. exclude1/2 are track ids already played for that artist
+// earlier in the same run (bracket mode only).
 export async function pairTracks(
   id1: string,
   id2: string,
@@ -55,17 +63,23 @@ export async function pairTracks(
 }> {
   const [top1, top2] = await Promise.all([topTracks(id1), topTracks(id2)]);
   const [pick1, pick2] = [randomTrack(top1, exclude1), randomTrack(top2, exclude2)];
-  const [preview1, preview2] = await Promise.all([
-    topPreviewUrl(pick1?.track_id),
-    topPreviewUrl(pick2?.track_id),
+  const visible1 = top1.slice(0, VISIBLE_COUNT);
+  const visible2 = top2.slice(0, VISIBLE_COUNT);
+
+  const [meta1, meta2, pickMeta1, pickMeta2] = await Promise.all([
+    Promise.all(visible1.map((t) => scrapeTrackMeta(t.track_id))),
+    Promise.all(visible2.map((t) => scrapeTrackMeta(t.track_id))),
+    scrapeTrackMeta(pick1?.track_id),
+    scrapeTrackMeta(pick2?.track_id),
   ]);
+
   return {
-    tracks1: top1.slice(0, 3),
-    preview1,
+    tracks1: visible1.map((t, i) => ({ ...t, ...meta1[i] })),
+    preview1: pickMeta1.preview_url,
     previewTrackId1: pick1?.track_id ?? null,
     previewTrackName1: pick1?.track_name ?? null,
-    tracks2: top2.slice(0, 3),
-    preview2,
+    tracks2: visible2.map((t, i) => ({ ...t, ...meta2[i] })),
+    preview2: pickMeta2.preview_url,
     previewTrackId2: pick2?.track_id ?? null,
     previewTrackName2: pick2?.track_name ?? null,
   };
@@ -96,24 +110,82 @@ export async function getMatchup(): Promise<Matchup> {
   };
 }
 
-// The 30s preview MP3 isn't exposed by the API anymore; scrape it from the
-// track's embed page (same __NEXT_DATA__ trick as the playlist reader).
-async function topPreviewUrl(trackId?: string): Promise<string | null> {
-  if (!trackId) return null;
-  try {
-    const res = await fetch(`https://open.spotify.com/embed/track/${trackId}`, {
-      headers: { "User-Agent": "Mozilla/5.0" },
-    });
-    const html = await res.text();
-    const m = html.match(
-      /<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/,
-    );
-    if (!m) return null;
-    const data = JSON.parse(m[1]);
-    return data?.props?.pageProps?.state?.data?.entity?.audioPreview?.url ?? null;
-  } catch {
-    return null;
-  }
+type TrackMeta = {
+  preview_url: string | null;
+  duration_ms: number | null;
+  image_url: string | null;
+  is_explicit: boolean;
+  credit: string | null;
+  tint_color: string | null;
+};
+
+const EMPTY_TRACK_META: TrackMeta = {
+  preview_url: null,
+  duration_ms: null,
+  image_url: null,
+  is_explicit: false,
+  credit: null,
+  tint_color: null,
+};
+
+// Same top tracks get re-scraped every round an artist advances in a bracket
+// (the visible tracks don't change, only the randomized preview pick does),
+// and Spotify's embed endpoint throttles (429s) under repeated requests --
+// so cache successful scrapes for the life of this server instance. Failed/
+// throttled results are NOT cached, so a later call can retry once whatever
+// caused the miss clears.
+const trackMetaCache = new Map<string, Promise<TrackMeta>>();
+
+// The 30s preview MP3 isn't exposed by the API anymore; scrape it (plus art,
+// duration, explicit flag, credit and Spotify's own background tint for the
+// track) from the track's embed page's __NEXT_DATA__ payload -- this is what
+// lets tracks render as native cards instead of a Spotify <iframe> embed.
+async function scrapeTrackMeta(trackId?: string): Promise<TrackMeta> {
+  if (!trackId) return EMPTY_TRACK_META;
+
+  const cached = trackMetaCache.get(trackId);
+  if (cached) return cached;
+
+  const promise = (async (): Promise<TrackMeta> => {
+    try {
+      const res = await fetch(`https://open.spotify.com/embed/track/${trackId}`, {
+        headers: { "User-Agent": "Mozilla/5.0" },
+      });
+      const html = await res.text();
+      const m = html.match(
+        /<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/,
+      );
+      if (!m) return EMPTY_TRACK_META;
+      const entity = JSON.parse(m[1])?.props?.pageProps?.state?.data?.entity;
+      if (!entity) return EMPTY_TRACK_META;
+
+      const images = entity.visualIdentity?.image as
+        | { url: string; maxWidth: number }[]
+        | undefined;
+      const image = images?.slice().sort((a, b) => b.maxWidth - a.maxWidth)[0];
+      const tint = entity.visualIdentity?.backgroundTintedBase as
+        | { red: number; green: number; blue: number }
+        | undefined;
+      const artists = entity.artists as { name: string }[] | undefined;
+
+      return {
+        preview_url: entity.audioPreview?.url ?? null,
+        duration_ms: entity.duration ?? null,
+        image_url: image?.url ?? null,
+        is_explicit: entity.isExplicit ?? false,
+        credit: artists && artists.length > 0 ? artists.map((a) => a.name).join(", ") : null,
+        tint_color: tint ? `rgb(${tint.red}, ${tint.green}, ${tint.blue})` : null,
+      };
+    } catch {
+      return EMPTY_TRACK_META;
+    }
+  })().then((meta) => {
+    if (!meta.preview_url) trackMetaCache.delete(trackId);
+    return meta;
+  });
+
+  trackMetaCache.set(trackId, promise);
+  return promise;
 }
 
 export async function recordVote(winnerId: string, loserId: string): Promise<void> {

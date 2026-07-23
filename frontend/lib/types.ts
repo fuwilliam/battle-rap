@@ -15,6 +15,14 @@ export type Track = {
   track_name: string;
   track_rank: number;
   track_url: string;
+  // Scraped from Spotify's embed page (see lib/data.ts scrapeTrackMeta) so the
+  // track row can be rendered natively instead of via a Spotify <iframe>.
+  preview_url: string | null;
+  duration_ms: number | null;
+  image_url: string | null;
+  is_explicit: boolean;
+  credit: string | null; // featured-artist credit line, e.g. "Metro Boomin, Travis Scott"
+  tint_color: string | null; // Spotify's embed background tint, e.g. "rgb(8, 32, 64)"
 };
 
 export type Matchup = {
