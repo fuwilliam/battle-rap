@@ -72,9 +72,6 @@ export function VoteArena({ initial }: { initial: Matchup }) {
           onPick={() => vote(rapper2, rapper1)}
         />
       </div>
-      <p className="mt-8 text-center text-sm text-white/40">
-        Tap to vote, hover for a taste
-      </p>
     </section>
   );
 }
