@@ -1,5 +1,6 @@
 "use client";
 
+import { useLayoutEffect, useRef, useState } from "react";
 import type { Rapper, Track } from "@/lib/types";
 import { useHoverPreview } from "@/lib/useHoverPreview";
 
@@ -78,6 +79,19 @@ export function RapperCard({
   autoplay?: boolean;
 }) {
   const { audioRef, isPlaying, start, stop } = useHoverPreview(rapper.preview_url, autoplay);
+  const marqueeTextRef = useRef<HTMLSpanElement>(null);
+  const marqueeContainerRef = useRef<HTMLSpanElement>(null);
+  const [overflowing, setOverflowing] = useState(false);
+
+  // Only scroll the "now playing" pill when the track/credit text is
+  // actually wider than the pill -- short names shouldn't animate at all.
+  useLayoutEffect(() => {
+    if (!isPlaying || !rapper.preview_track_name) return;
+    const text = marqueeTextRef.current;
+    const container = marqueeContainerRef.current;
+    if (!text || !container) return;
+    setOverflowing(text.scrollWidth > container.clientWidth);
+  }, [isPlaying, rapper.preview_track_name, rapper.preview_credit, rapper.artist_name]);
 
   return (
     <div
@@ -109,8 +123,14 @@ export function RapperCard({
         {isPlaying && rapper.preview_track_name && (
           <div className="absolute left-2 top-2 flex max-w-[55%] items-center gap-1.5 rounded-full border border-accent/60 bg-black/70 px-2.5 py-1 text-xs font-semibold backdrop-blur">
             <span className="inline-block shrink-0 animate-spin-slow leading-none">💿</span>
-            <span className="flex min-w-0 flex-1 justify-start overflow-hidden whitespace-nowrap">
-              <span className="inline-block animate-marquee whitespace-nowrap">
+            <span
+              ref={marqueeContainerRef}
+              className="flex min-w-0 flex-1 justify-start overflow-hidden whitespace-nowrap"
+            >
+              <span
+                ref={marqueeTextRef}
+                className={`inline-block whitespace-nowrap ${overflowing ? "animate-marquee" : ""}`}
+              >
                 {rapper.preview_track_name} — {rapper.preview_credit ?? rapper.artist_name}
               </span>
             </span>

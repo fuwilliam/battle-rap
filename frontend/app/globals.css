@@ -52,17 +52,23 @@ h3 {
 }
 
 /* "now playing" ticker on the hover-preview badge -- starts at its resting
-   (right-aligned) position so the track name is visible immediately, holds
-   there long enough not to be missed on a blink, then scrolls fully off to
-   the left before looping. */
+   position so the track name is visible immediately, holds there long
+   enough not to be missed on a blink, scrolls fully off to the left, then
+   jumps to off-screen-right (invisible, since it's already fully clipped)
+   and scrolls back in from the right so the loop has no visible pop. */
 @keyframes marquee {
   0%,
   22% {
     transform: translateX(0%);
   }
-  78%,
-  100% {
+  55% {
     transform: translateX(-100%);
+  }
+  55.01% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(0%);
   }
 }
 
