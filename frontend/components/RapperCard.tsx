@@ -56,7 +56,10 @@ function TrackRow({ track }: { track: Track }) {
         </div>
         {track.credit && <p className="truncate text-xs text-white/60">{track.credit}</p>}
       </div>
-      <span className="shrink-0 text-xs text-white/60">{formatDuration(track.duration_ms)}</span>
+      <span className="shrink-0 text-xs text-white/60">
+        {track.playcount != null && `${compact.format(track.playcount)} · `}
+        {formatDuration(track.duration_ms)}
+      </span>
     </div>
   );
 }

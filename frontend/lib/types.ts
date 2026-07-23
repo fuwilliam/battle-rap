@@ -16,6 +16,7 @@ export type Track = {
   track_name: string;
   track_rank: number;
   track_url: string;
+  playcount: number | null; // lifetime Spotify stream count for the track
   // Scraped from Spotify's embed page (see lib/data.ts scrapeTrackMeta) so the
   // track row can be rendered natively instead of via a Spotify <iframe>.
   preview_url: string | null;

@@ -21,7 +21,7 @@ const VISIBLE_COUNT = 5;
 
 async function topTracks(artistId: string): Promise<Track[]> {
   return query<Track>(
-    `SELECT track_id, artist_id, track_name, track_rank, track_url
+    `SELECT track_id, artist_id, track_name, track_rank, track_url, playcount
      FROM mart.top_tracks
      WHERE artist_id = ? AND track_rank <= ${POOL_SIZE}
      ORDER BY track_rank`,
