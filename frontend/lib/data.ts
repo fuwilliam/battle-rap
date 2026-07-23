@@ -366,3 +366,13 @@ export async function getBracketRanking(): Promise<BracketRankingRow[]> {
      ORDER BY championships DESC, final_fours DESC, win_rate DESC, wins DESC`,
   );
 }
+
+// Bracket record for one artist -- e.g. the champion screen. Reuses
+// getBracketRanking rather than a bespoke query since it already computes
+// exactly this per-artist aggregate for every artist with a bracket result.
+export async function getBracketArtistStats(
+  artistId: string,
+): Promise<BracketRankingRow | null> {
+  const rows = await getBracketRanking();
+  return rows.find((r) => r.artist_id === artistId) ?? null;
+}

@@ -6,6 +6,7 @@ import type { SeedEntry, Track } from "@/lib/types";
 import { pairEntrants, roundLabel } from "@/lib/bracket";
 import { RapperCard } from "@/components/RapperCard";
 import { BracketTree } from "@/components/BracketTree";
+import { ChampionStats } from "@/components/ChampionStats";
 
 type Match = {
   a: SeedEntry;
@@ -217,16 +218,19 @@ export function BracketArena({
     return (
       <section className="mx-auto max-w-5xl px-4 py-16 text-center">
         <p className="mb-4 text-sm uppercase tracking-widest text-accent">Champion</p>
-        <div className="animate-crown mx-auto max-w-md">
-          <RapperCard
-            rapper={champion}
-            tracks={[]}
-            picked
-            dimmed={false}
-            disabled={false}
-            onPick={() => {}}
-            autoplay
-          />
+        <div className="mx-auto flex max-w-3xl flex-col items-center justify-center gap-8 sm:flex-row sm:items-center">
+          <div className="animate-crown w-full max-w-md">
+            <RapperCard
+              rapper={champion}
+              tracks={[]}
+              picked
+              dimmed={false}
+              disabled={false}
+              onPick={() => {}}
+              autoplay
+            />
+          </div>
+          <ChampionStats artistId={champion.artist_id} />
         </div>
 
         <div className="mt-6 flex justify-center gap-3">
