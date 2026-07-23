@@ -176,6 +176,15 @@ function wildcardCount(size: number): number {
 const WEIGHT_WIN_RATE = 0.65;
 const WEIGHT_LISTENERS = 0.35;
 
+// Random jitter added to each score before sorting, so seed order (and thus
+// which artists land in which Round-of-16-style pairing) isn't identical
+// every time the same underlying votes/listeners data produces the same
+// blend -- without this, wildcards were the only source of variety and the
+// deterministic "core" always seeded (and matched up) in the exact same
+// order. Big enough to reshuffle closely-ranked neighbors and occasionally
+// the very top; small enough that a rank-500 artist can't leapfrog into #1.
+const SEED_JITTER = 0.25;
+
 // Bracket seeding pool: blend the win-rate leaderboard with the listeners
 // leaderboard into one seed order (win rate weighted more heavily -- see
 // above), dedup, then reserve a handful of the worst seeds as wildcards --
@@ -211,7 +220,8 @@ export async function getBracketPool(size: number): Promise<SeedEntry[]> {
       rapper: r,
       score:
         WEIGHT_WIN_RATE * pct(posByWinRate.get(r.artist_id), winRateRanked.length) +
-        WEIGHT_LISTENERS * pct(posByListeners.get(r.artist_id), listenersRanked.length),
+        WEIGHT_LISTENERS * pct(posByListeners.get(r.artist_id), listenersRanked.length) +
+        (Math.random() - 0.5) * SEED_JITTER,
     }))
     .sort((a, b) => a.score - b.score || b.rapper.monthly_listeners - a.rapper.monthly_listeners);
 
