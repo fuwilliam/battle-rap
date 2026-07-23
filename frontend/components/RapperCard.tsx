@@ -9,6 +9,14 @@ const compact = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 1,
 });
 
+// Always shows exactly 1 decimal (e.g. "1.0B", not "1B") so the stream
+// count doesn't jump between digit counts as it crosses round numbers.
+const streamsFormat = new Intl.NumberFormat("en-US", {
+  notation: "compact",
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+});
+
 function formatDuration(ms: number | null): string {
   if (ms == null) return "";
   const totalSec = Math.round(ms / 1000);
@@ -56,10 +64,12 @@ function TrackRow({ track }: { track: Track }) {
         </div>
         {track.credit && <p className="truncate text-xs text-white/60">{track.credit}</p>}
       </div>
-      <span className="shrink-0 text-xs text-white/60">
-        {track.playcount != null && `${compact.format(track.playcount)} · `}
-        {formatDuration(track.duration_ms)}
-      </span>
+      <div className="flex shrink-0 flex-col items-end gap-0.5 text-xs">
+        {track.playcount != null && (
+          <span className="font-semibold text-white/80">{streamsFormat.format(track.playcount)}</span>
+        )}
+        <span className="text-white/50">{formatDuration(track.duration_ms)}</span>
+      </div>
     </div>
   );
 }
