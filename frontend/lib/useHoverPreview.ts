@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { connectToLimiter } from "./audioLimiter";
 import { audioBus, type Pausable } from "./spotifyEmbed";
 
 // Fades a 30s preview clip in on hover (or on demand via `autoplay`) and back
@@ -41,6 +42,7 @@ export function useHoverPreview(url: string | null, autoplay = false) {
     const el = audioRef.current;
     if (!el || !url) return;
     audioBus.claim(busHandle.current); // pause any playing track/clip first
+    connectToLimiter(el);
     el.currentTime = 0;
     el.volume = 0;
     el

@@ -85,12 +85,19 @@ export function RapperCard({
 
   // Only scroll the "now playing" pill when the track/credit text is
   // actually wider than the pill -- short names shouldn't animate at all.
+  // --marquee-enter (the pill's own width) tells the loop's re-entry point
+  // in globals.css how far off-screen-right to jump to, so it doesn't
+  // travel further than necessary before becoming visible again.
   useLayoutEffect(() => {
     if (!isPlaying || !rapper.preview_track_name) return;
     const text = marqueeTextRef.current;
     const container = marqueeContainerRef.current;
     if (!text || !container) return;
-    setOverflowing(text.scrollWidth > container.clientWidth);
+    const isOverflowing = text.scrollWidth > container.clientWidth;
+    setOverflowing(isOverflowing);
+    if (isOverflowing) {
+      text.style.setProperty("--marquee-enter", `${container.clientWidth}px`);
+    }
   }, [isPlaying, rapper.preview_track_name, rapper.preview_credit, rapper.artist_name]);
 
   return (
