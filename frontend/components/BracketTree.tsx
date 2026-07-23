@@ -11,7 +11,7 @@ const COL_W = BOX_W + COL_GAP;
 const LABEL_H = 28;
 const LINE_COLOR = "rgba(255,255,255,0.15)";
 const PATH_COLOR = "#4ade80";
-const PATH_GLOW = "0 0 4px 1px #4ade80, 0 0 12px 3px rgba(74,222,128,0.8), 0 0 24px 7px rgba(74,222,128,0.5)";
+const PATH_GLOW = "0 0 2px rgba(74,222,128,0.7), 0 0 6px 1px rgba(74,222,128,0.35)";
 
 function Slot({ entry, won, champion }: { entry: SeedEntry; won: boolean; champion: boolean }) {
   return (
@@ -86,7 +86,7 @@ function Line({
   axis: "x" | "y";
   onPath: boolean;
 }) {
-  const thickness = onPath ? 3 : 1;
+  const thickness = onPath ? 2 : 1;
   const offset = (thickness - 1) / 2;
   const size =
     axis === "x"
