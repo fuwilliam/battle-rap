@@ -15,10 +15,12 @@ type Match = {
   previewA?: string | null;
   previewTrackIdA?: string | null;
   previewTrackNameA?: string | null;
+  previewCreditA?: string | null;
   tracksB?: Track[];
   previewB?: string | null;
   previewTrackIdB?: string | null;
   previewTrackNameB?: string | null;
+  previewCreditB?: string | null;
   winner?: string; // artist_id
 };
 
@@ -33,10 +35,12 @@ type Action =
       previewA: string | null;
       previewTrackIdA: string | null;
       previewTrackNameA: string | null;
+      previewCreditA: string | null;
       tracksB: Track[];
       previewB: string | null;
       previewTrackIdB: string | null;
       previewTrackNameB: string | null;
+      previewCreditB: string | null;
     }
   | { type: "pickWinner"; roundIdx: number; matchIdx: number; winnerId: string };
 
@@ -55,10 +59,12 @@ function reducer(state: BracketState, action: Action): BracketState {
                     previewA: action.previewA,
                     previewTrackIdA: action.previewTrackIdA,
                     previewTrackNameA: action.previewTrackNameA,
+                    previewCreditA: action.previewCreditA,
                     tracksB: action.tracksB,
                     previewB: action.previewB,
                     previewTrackIdB: action.previewTrackIdB,
                     previewTrackNameB: action.previewTrackNameB,
+                    previewCreditB: action.previewCreditB,
                   },
             ),
       ),
@@ -111,10 +117,12 @@ async function fetchTracks(
     previewA: string | null;
     previewTrackIdA: string | null;
     previewTrackNameA: string | null;
+    previewCreditA: string | null;
     tracksB: Track[];
     previewB: string | null;
     previewTrackIdB: string | null;
     previewTrackNameB: string | null;
+    previewCreditB: string | null;
   }>;
 }
 
@@ -150,11 +158,13 @@ export function BracketArena({
             ...finalMatch.a,
             preview_url: finalMatch.previewA ?? null,
             preview_track_name: finalMatch.previewTrackNameA ?? null,
+            preview_credit: finalMatch.previewCreditA ?? null,
           }
         : {
             ...finalMatch.b,
             preview_url: finalMatch.previewB ?? null,
             preview_track_name: finalMatch.previewTrackNameB ?? null,
+            preview_credit: finalMatch.previewCreditB ?? null,
           }
       : null;
 
@@ -271,6 +281,7 @@ export function BracketArena({
             ...currentMatch.a,
             preview_url: currentMatch.previewA ?? null,
             preview_track_name: currentMatch.previewTrackNameA ?? null,
+            preview_credit: currentMatch.previewCreditA ?? null,
           }}
           tracks={currentMatch.tracksA ?? []}
           picked={picked === currentMatch.a.artist_id}
@@ -284,6 +295,7 @@ export function BracketArena({
             ...currentMatch.b,
             preview_url: currentMatch.previewB ?? null,
             preview_track_name: currentMatch.previewTrackNameB ?? null,
+            preview_credit: currentMatch.previewCreditB ?? null,
           }}
           tracks={currentMatch.tracksB ?? []}
           picked={picked === currentMatch.b.artist_id}

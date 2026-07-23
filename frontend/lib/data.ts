@@ -56,10 +56,12 @@ export async function pairTracks(
   preview1: string | null;
   previewTrackId1: string | null;
   previewTrackName1: string | null;
+  previewCredit1: string | null;
   tracks2: Track[];
   preview2: string | null;
   previewTrackId2: string | null;
   previewTrackName2: string | null;
+  previewCredit2: string | null;
 }> {
   const [top1, top2] = await Promise.all([topTracks(id1), topTracks(id2)]);
   const [pick1, pick2] = [randomTrack(top1, exclude1), randomTrack(top2, exclude2)];
@@ -78,10 +80,12 @@ export async function pairTracks(
     preview1: pickMeta1.preview_url,
     previewTrackId1: pick1?.track_id ?? null,
     previewTrackName1: pick1?.track_name ?? null,
+    previewCredit1: pickMeta1.credit,
     tracks2: visible2.map((t, i) => ({ ...t, ...meta2[i] })),
     preview2: pickMeta2.preview_url,
     previewTrackId2: pick2?.track_id ?? null,
     previewTrackName2: pick2?.track_name ?? null,
+    previewCredit2: pickMeta2.credit,
   };
 }
 
@@ -99,12 +103,12 @@ export async function getMatchup(): Promise<Matchup> {
   const rapper1 = pool[i];
   const rapper2 = pool[j];
 
-  const { tracks1, preview1, previewTrackName1, tracks2, preview2, previewTrackName2 } =
+  const { tracks1, preview1, previewTrackName1, previewCredit1, tracks2, preview2, previewTrackName2, previewCredit2 } =
     await pairTracks(rapper1.artist_id, rapper2.artist_id);
 
   return {
-    rapper1: { ...rapper1, preview_url: preview1, preview_track_name: previewTrackName1 },
-    rapper2: { ...rapper2, preview_url: preview2, preview_track_name: previewTrackName2 },
+    rapper1: { ...rapper1, preview_url: preview1, preview_track_name: previewTrackName1, preview_credit: previewCredit1 },
+    rapper2: { ...rapper2, preview_url: preview2, preview_track_name: previewTrackName2, preview_credit: previewCredit2 },
     tracks1,
     tracks2,
   };
@@ -313,7 +317,13 @@ async function getRandomPool(size: number): Promise<SeedEntry[]> {
   }
   return shuffle(pool)
     .slice(0, size)
-    .map((rapper, i) => ({ ...rapper, preview_url: null, preview_track_name: null, seed: i + 1 }));
+    .map((rapper, i) => ({
+      ...rapper,
+      preview_url: null,
+      preview_track_name: null,
+      preview_credit: null,
+      seed: i + 1,
+    }));
 }
 
 // Bracket seeding pool: blend the win-rate leaderboard with the listeners
@@ -365,6 +375,7 @@ async function getMajorLeaguePool(size: number): Promise<SeedEntry[]> {
     ...rapper,
     preview_url: null,
     preview_track_name: null,
+    preview_credit: null,
     seed: i + 1,
   }));
 }

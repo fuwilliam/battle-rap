@@ -111,7 +111,7 @@ export function RapperCard({
             <span className="inline-block shrink-0 animate-spin-slow leading-none">💿</span>
             <span className="flex min-w-0 flex-1 justify-start overflow-hidden whitespace-nowrap">
               <span className="inline-block animate-marquee whitespace-nowrap">
-                {rapper.preview_track_name} — {rapper.artist_name}
+                {rapper.preview_track_name} — {rapper.preview_credit ?? rapper.artist_name}
               </span>
             </span>
           </div>

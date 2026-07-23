@@ -7,6 +7,7 @@ export type Rapper = {
   image_url: string | null;
   preview_url: string | null; // 30s clip of the artist's top track (hover preview)
   preview_track_name: string | null; // name of the track backing preview_url
+  preview_credit: string | null; // full featured-artist credit line for preview_track_name
 };
 
 export type Track = {

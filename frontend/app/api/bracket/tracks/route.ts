@@ -22,20 +22,24 @@ export async function GET(request: Request) {
       preview1,
       previewTrackId1,
       previewTrackName1,
+      previewCredit1,
       tracks2,
       preview2,
       previewTrackId2,
       previewTrackName2,
+      previewCredit2,
     } = await pairTracks(a, b, excludeA, excludeB);
     return Response.json({
       tracksA: tracks1,
       previewA: preview1,
       previewTrackIdA: previewTrackId1,
       previewTrackNameA: previewTrackName1,
+      previewCreditA: previewCredit1,
       tracksB: tracks2,
       previewB: preview2,
       previewTrackIdB: previewTrackId2,
       previewTrackNameB: previewTrackName2,
+      previewCreditB: previewCredit2,
     });
   } catch (err) {
     console.error("GET /api/bracket/tracks failed:", err);
