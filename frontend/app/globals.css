@@ -52,19 +52,22 @@ h3 {
 }
 
 /* "now playing" ticker on the hover-preview badge -- starts at its resting
-   (right-aligned) position so the track name is visible immediately, then
-   scrolls fully off to the left before looping. */
+   (right-aligned) position so the track name is visible immediately, holds
+   there long enough not to be missed on a blink, then scrolls fully off to
+   the left before looping. */
 @keyframes marquee {
-  from {
+  0%,
+  22% {
     transform: translateX(0%);
   }
-  to {
+  78%,
+  100% {
     transform: translateX(-100%);
   }
 }
 
 .animate-marquee {
-  animation: marquee 12s linear infinite;
+  animation: marquee 14s linear infinite;
 }
 
 @keyframes spin-slow {
