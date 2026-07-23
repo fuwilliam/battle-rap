@@ -27,6 +27,7 @@ export function BracketSizePicker({
   const [mode, setMode] = useState<BracketMode>("major_league");
   const [loadingSize, setLoadingSize] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const activeMode = MODES.find((m) => m.key === mode) ?? MODES[0];
 
   async function pick(size: number) {
     setLoadingSize(size);
@@ -52,7 +53,6 @@ export function BracketSizePicker({
           <button
             key={m.key}
             type="button"
-            title={m.description}
             onClick={() => setMode(m.key)}
             className={`rounded-full border px-4 py-1.5 text-sm font-medium transition ${
               mode === m.key
@@ -64,6 +64,7 @@ export function BracketSizePicker({
           </button>
         ))}
       </div>
+      <p className="mt-3 text-sm text-white/50">{activeMode.description}</p>
 
       <div className="mt-6 flex justify-center gap-4">
         {SIZES.map((size) => (
