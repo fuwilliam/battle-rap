@@ -7,20 +7,34 @@ export async function GET(request: Request) {
   const params = new URL(request.url).searchParams;
   const a = params.get("a");
   const b = params.get("b");
+  // comma-separated track ids already played for that artist earlier in this
+  // bracket run, so the hover-preview clip doesn't repeat round after round.
+  const excludeA = params.get("excludeA")?.split(",").filter(Boolean) ?? [];
+  const excludeB = params.get("excludeB")?.split(",").filter(Boolean) ?? [];
 
   if (!a || !b) {
     return Response.json({ error: "a and b artist ids are required" }, { status: 400 });
   }
 
   try {
-    const { tracks1, preview1, previewTrackName1, tracks2, preview2, previewTrackName2 } =
-      await pairTracks(a, b);
+    const {
+      tracks1,
+      preview1,
+      previewTrackId1,
+      previewTrackName1,
+      tracks2,
+      preview2,
+      previewTrackId2,
+      previewTrackName2,
+    } = await pairTracks(a, b, excludeA, excludeB);
     return Response.json({
       tracksA: tracks1,
       previewA: preview1,
+      previewTrackIdA: previewTrackId1,
       previewTrackNameA: previewTrackName1,
       tracksB: tracks2,
       previewB: preview2,
+      previewTrackIdB: previewTrackId2,
       previewTrackNameB: previewTrackName2,
     });
   } catch (err) {

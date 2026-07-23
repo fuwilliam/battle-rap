@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useReducer, useState } from "react";
+import { useEffect, useReducer, useRef, useState } from "react";
 import Link from "next/link";
 import type { SeedEntry, Track } from "@/lib/types";
 import { pairEntrants, roundLabel } from "@/lib/bracket";
@@ -12,9 +12,11 @@ type Match = {
   b: SeedEntry;
   tracksA?: Track[];
   previewA?: string | null;
+  previewTrackIdA?: string | null;
   previewTrackNameA?: string | null;
   tracksB?: Track[];
   previewB?: string | null;
+  previewTrackIdB?: string | null;
   previewTrackNameB?: string | null;
   winner?: string; // artist_id
 };
@@ -28,9 +30,11 @@ type Action =
       matchIdx: number;
       tracksA: Track[];
       previewA: string | null;
+      previewTrackIdA: string | null;
       previewTrackNameA: string | null;
       tracksB: Track[];
       previewB: string | null;
+      previewTrackIdB: string | null;
       previewTrackNameB: string | null;
     }
   | { type: "pickWinner"; roundIdx: number; matchIdx: number; winnerId: string };
@@ -48,9 +52,11 @@ function reducer(state: BracketState, action: Action): BracketState {
                     ...m,
                     tracksA: action.tracksA,
                     previewA: action.previewA,
+                    previewTrackIdA: action.previewTrackIdA,
                     previewTrackNameA: action.previewTrackNameA,
                     tracksB: action.tracksB,
                     previewB: action.previewB,
+                    previewTrackIdB: action.previewTrackIdB,
                     previewTrackNameB: action.previewTrackNameB,
                   },
             ),
@@ -88,15 +94,25 @@ function findCurrent(rounds: Match[][]): { roundIdx: number; matchIdx: number } 
   return null;
 }
 
-async function fetchTracks(idA: string, idB: string) {
-  const res = await fetch(`/api/bracket/tracks?a=${idA}&b=${idB}`, { cache: "no-store" });
+async function fetchTracks(
+  idA: string,
+  idB: string,
+  excludeA: string[],
+  excludeB: string[],
+) {
+  const params = new URLSearchParams({ a: idA, b: idB });
+  if (excludeA.length > 0) params.set("excludeA", excludeA.join(","));
+  if (excludeB.length > 0) params.set("excludeB", excludeB.join(","));
+  const res = await fetch(`/api/bracket/tracks?${params}`, { cache: "no-store" });
   if (!res.ok) return null;
   return res.json() as Promise<{
     tracksA: Track[];
     previewA: string | null;
+    previewTrackIdA: string | null;
     previewTrackNameA: string | null;
     tracksB: Track[];
     previewB: string | null;
+    previewTrackIdB: string | null;
     previewTrackNameB: string | null;
   }>;
 }
@@ -114,6 +130,11 @@ export function BracketArena({
   const [picked, setPicked] = useState<string | null>(null);
   // one id per playthrough, so every pick in this bracket groups together
   const [runId] = useState(() => crypto.randomUUID());
+  // artist_id -> track ids already served as this bracket run's hover-preview
+  // clip, so an artist advancing through multiple rounds doesn't repeat one.
+  // A ref (not state) because it's write-only bookkeeping -- updating it
+  // should never itself trigger a re-render.
+  const playedTracksRef = useRef<Map<string, Set<string>>>(new Map());
 
   const current = findCurrent(state.rounds);
   const currentMatch = current ? state.rounds[current.roundIdx][current.matchIdx] : null;
@@ -146,8 +167,20 @@ export function BracketArena({
     [current.matchIdx, current.matchIdx + 1].forEach((matchIdx) => {
       const match = round[matchIdx];
       if (!match || match.tracksA) return;
-      fetchTracks(match.a.artist_id, match.b.artist_id).then((data) => {
+      const excludeA = [...(playedTracksRef.current.get(match.a.artist_id) ?? [])];
+      const excludeB = [...(playedTracksRef.current.get(match.b.artist_id) ?? [])];
+      fetchTracks(match.a.artist_id, match.b.artist_id, excludeA, excludeB).then((data) => {
         if (!data) return;
+        if (data.previewTrackIdA) {
+          const seen = playedTracksRef.current.get(match.a.artist_id) ?? new Set();
+          seen.add(data.previewTrackIdA);
+          playedTracksRef.current.set(match.a.artist_id, seen);
+        }
+        if (data.previewTrackIdB) {
+          const seen = playedTracksRef.current.get(match.b.artist_id) ?? new Set();
+          seen.add(data.previewTrackIdB);
+          playedTracksRef.current.set(match.b.artist_id, seen);
+        }
         dispatch({
           type: "setTracks",
           roundIdx: current.roundIdx,

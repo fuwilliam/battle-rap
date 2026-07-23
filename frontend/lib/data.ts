@@ -22,28 +22,39 @@ async function topTracks(artistId: string): Promise<Track[]> {
   );
 }
 
-function randomTrack(tracks: Track[]): Track | undefined {
-  if (tracks.length === 0) return undefined;
-  return tracks[Math.floor(Math.random() * tracks.length)];
+// excludeIds lets a caller avoid repeating a preview clip already played
+// (e.g. the same artist advancing through multiple bracket rounds) -- if
+// every track's been excluded already (all 5 seen), fall back to the full
+// pool rather than picking nothing.
+function randomTrack(tracks: Track[], excludeIds: string[] = []): Track | undefined {
+  const pool = excludeIds.length > 0 ? tracks.filter((t) => !excludeIds.includes(t.track_id)) : tracks;
+  const candidates = pool.length > 0 ? pool : tracks;
+  if (candidates.length === 0) return undefined;
+  return candidates[Math.floor(Math.random() * candidates.length)];
 }
 
 // Top 3 tracks (for the visible embeds) + a hover-preview clip randomly
 // picked from the top 5 (so it's not the same snippet every single time) for
 // a specific pair of artists -- used for both the random head-to-head
-// matchup and a single bracket match.
+// matchup and a single bracket match. exclude1/exclude2 are track ids
+// already played for that artist earlier in the same run (bracket mode only).
 export async function pairTracks(
   id1: string,
   id2: string,
+  exclude1: string[] = [],
+  exclude2: string[] = [],
 ): Promise<{
   tracks1: Track[];
   preview1: string | null;
+  previewTrackId1: string | null;
   previewTrackName1: string | null;
   tracks2: Track[];
   preview2: string | null;
+  previewTrackId2: string | null;
   previewTrackName2: string | null;
 }> {
   const [top1, top2] = await Promise.all([topTracks(id1), topTracks(id2)]);
-  const [pick1, pick2] = [randomTrack(top1), randomTrack(top2)];
+  const [pick1, pick2] = [randomTrack(top1, exclude1), randomTrack(top2, exclude2)];
   const [preview1, preview2] = await Promise.all([
     topPreviewUrl(pick1?.track_id),
     topPreviewUrl(pick2?.track_id),
@@ -51,9 +62,11 @@ export async function pairTracks(
   return {
     tracks1: top1.slice(0, 3),
     preview1,
+    previewTrackId1: pick1?.track_id ?? null,
     previewTrackName1: pick1?.track_name ?? null,
     tracks2: top2.slice(0, 3),
     preview2,
+    previewTrackId2: pick2?.track_id ?? null,
     previewTrackName2: pick2?.track_name ?? null,
   };
 }
