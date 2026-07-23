@@ -48,12 +48,6 @@ export function BracketSizePicker({
       <h1 className="text-3xl font-bold">Bracket Mode</h1>
       <p className="mt-2 text-white/60">Pick a field size and crown a champion.</p>
 
-      {mode === "major_league" && (
-        <p className="mt-4 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/60">
-          ! Bored of the same matchups? Discover new artists in Random mode!
-        </p>
-      )}
-
       <div className="mt-8 flex justify-center gap-2">
         {MODES.map((m) => (
           <button
@@ -86,6 +80,13 @@ export function BracketSizePicker({
           </button>
         ))}
       </div>
+
+      {mode === "major_league" && (
+        <p className="mt-4 inline-flex items-center gap-1 rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-xs text-accent/80">
+          <span aria-hidden="true">ⓘ</span>
+          Bored of the same matchups? Discover new artists in Random mode!
+        </p>
+      )}
 
       {error && <p className="mt-6 text-sm text-red-400">{error}</p>}
     </section>
