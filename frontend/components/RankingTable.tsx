@@ -59,7 +59,7 @@ export function RankingTable({ rows }: { rows: RankingRow[] }) {
               {COLS.map((c) => (
                 <th
                   key={c.key}
-                  className={`px-4 py-3 font-medium ${c.key === "win_rate" ? "" : "text-right"}`}
+                  className={`whitespace-nowrap px-4 py-3 font-medium ${c.key === "win_rate" ? "" : "text-right"}`}
                 >
                   <button
                     type="button"
