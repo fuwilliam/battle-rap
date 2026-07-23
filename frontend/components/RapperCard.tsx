@@ -98,19 +98,15 @@ export function RapperCard({
 
   // Only scroll the "now playing" pill when the track/credit text is
   // actually wider than the pill -- short names shouldn't animate at all.
-  // --marquee-enter (the pill's own width) tells the loop's re-entry point
-  // in globals.css how far off-screen-right to jump to, so it doesn't
-  // travel further than necessary before becoming visible again.
+  // marqueeTextRef always wraps a single, non-duplicated copy of the label
+  // (see the JSX below) so this measurement stays accurate regardless of
+  // whether the looping second copy is currently being rendered.
   useLayoutEffect(() => {
     if (!isPlaying || !rapper.preview_track_name) return;
     const text = marqueeTextRef.current;
     const container = marqueeContainerRef.current;
     if (!text || !container) return;
-    const isOverflowing = text.scrollWidth > container.clientWidth;
-    setOverflowing(isOverflowing);
-    if (isOverflowing) {
-      text.style.setProperty("--marquee-enter", `${container.clientWidth}px`);
-    }
+    setOverflowing(text.scrollWidth > container.clientWidth);
   }, [isPlaying, rapper.preview_track_name, rapper.preview_credit, rapper.artist_name]);
 
   return (
@@ -148,10 +144,24 @@ export function RapperCard({
               className="flex min-w-0 flex-1 justify-start overflow-hidden whitespace-nowrap"
             >
               <span
-                ref={marqueeTextRef}
-                className={`inline-block whitespace-nowrap ${overflowing ? "animate-marquee" : ""}`}
+                className={`inline-flex items-center whitespace-nowrap ${overflowing ? "animate-marquee" : ""}`}
               >
-                {rapper.preview_track_name} — {rapper.preview_credit ?? rapper.artist_name}
+                <span ref={marqueeTextRef}>
+                  {rapper.preview_track_name} — {rapper.preview_credit ?? rapper.artist_name}
+                </span>
+                {overflowing && (
+                  <>
+                    <span className="mx-2" aria-hidden="true">
+                      •
+                    </span>
+                    <span aria-hidden="true">
+                      {rapper.preview_track_name} — {rapper.preview_credit ?? rapper.artist_name}
+                    </span>
+                    <span className="mx-2" aria-hidden="true">
+                      •
+                    </span>
+                  </>
+                )}
               </span>
             </span>
           </div>

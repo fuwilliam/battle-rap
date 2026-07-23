@@ -51,33 +51,23 @@ h3 {
   animation: crown 0.6s ease-out;
 }
 
-/* "now playing" ticker on the hover-preview badge -- starts at its resting
-   position so the track name is visible immediately, holds there long
-   enough not to be missed on a blink, scrolls fully off to the left, then
-   jumps to just off-screen-right (invisible, since it's already fully
-   clipped) and scrolls back in from the right so the loop has no visible
-   pop. The re-entry point is --marquee-enter (the pill's own width, set via
-   JS in RapperCard) rather than 100% (the text's own width) -- 100% would
-   be however much wider the full track name is than the pill, so most of
-   the return trip would happen off-screen before any of it became visible. */
+/* "now playing" ticker on the hover-preview badge. RapperCard renders the
+   track/artist label twice back-to-back (each copy followed by a "•"
+   separator of the same width), so translating by exactly -50% of the
+   whole (both-copies) width moves it by exactly one label+separator period
+   -- the second copy lands precisely where the first started, so the loop
+   is seamless and the scroll never has to pause or jump. */
 @keyframes marquee {
-  0%,
-  22% {
+  0% {
     transform: translateX(0%);
-  }
-  55% {
-    transform: translateX(-100%);
-  }
-  55.01% {
-    transform: translateX(var(--marquee-enter, 100%));
   }
   100% {
-    transform: translateX(0%);
+    transform: translateX(-50%);
   }
 }
 
 .animate-marquee {
-  animation: marquee 14s linear infinite;
+  animation: marquee 9s linear infinite;
 }
 
 @keyframes spin-slow {
