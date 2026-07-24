@@ -228,7 +228,7 @@ export async function getRanking(): Promise<RankingRow[]> {
      LEFT JOIN losses l USING (artist_id)
      LEFT JOIN mart.elo e USING (artist_id)
      WHERE coalesce(w.wins, 0) + coalesce(l.losses, 0) >= 5
-     ORDER BY win_rate DESC, wins DESC, monthly_listeners DESC`,
+     ORDER BY elo_rating DESC, win_rate DESC, wins DESC`,
   );
 }
 

@@ -22,8 +22,8 @@ const COLS: { key: SortKey; label: string }[] = [
 ];
 
 export function RankingTable({ rows }: { rows: RankingRow[] }) {
-  // canonical battle rank from the incoming (win_rate desc, wins desc) order;
-  // it stays glued to each artist even when the view is re-sorted
+  // canonical battle rank from the incoming (elo_rating desc, win_rate desc,
+  // wins desc) order; it stays glued to each artist even when the view is re-sorted
   const ranked = useMemo(() => rows.map((r, i) => ({ ...r, rank: i + 1 })), [rows]);
 
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
