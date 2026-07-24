@@ -7,6 +7,7 @@ sources:
       - name: rappers
       - name: top_tracks
       - name: results
+      - name: bracket_results
 
 models:
   - name: stg_rappers
@@ -90,5 +91,34 @@ models:
           - not_null
       - name: voted_at
         description: "Timestamp of when the matchup occurred"
+        tests:
+          - not_null
+
+  - name: stg_bracket_results
+    description: "Basically casting voted_at to proper timestamp format"
+    columns:
+      - name: bracket_result_id
+        description: "Synthetic key (hash of run_id/winner_id/loser_id/voted_at) since raw.bracket_results has no natural id"
+        tests:
+          - unique
+          - not_null
+      - name: run_id
+        description: "Groups every match played in the same bracket run"
+        tests:
+          - not_null
+      - name: matches_in_round
+        description: "How many matches were being played in that round (2 = Final Four, 1 = the Final)"
+        tests:
+          - not_null
+      - name: winner_id
+        description: "artist_id of the winner of the match"
+        tests:
+          - not_null
+      - name: loser_id
+        description: "artist_id of the loser of the match"
+        tests:
+          - not_null
+      - name: voted_at
+        description: "Timestamp of when the match occurred"
         tests:
           - not_null

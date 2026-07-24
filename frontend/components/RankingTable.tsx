@@ -11,13 +11,14 @@ const compact = new Intl.NumberFormat("en-US", {
 const MEDALS = ["🥇", "🥈", "🥉"];
 const PAGE = 50;
 
-type SortKey = "monthly_listeners" | "wins" | "losses" | "win_rate";
+type SortKey = "monthly_listeners" | "wins" | "losses" | "win_rate" | "elo_rating";
 
 const COLS: { key: SortKey; label: string }[] = [
   { key: "monthly_listeners", label: "Monthly Listeners" },
   { key: "wins", label: "Wins" },
   { key: "losses", label: "Losses" },
   { key: "win_rate", label: "Win Rate" },
+  { key: "elo_rating", label: "Elo" },
 ];
 
 export function RankingTable({ rows }: { rows: RankingRow[] }) {
@@ -114,6 +115,7 @@ export function RankingTable({ rows }: { rows: RankingRow[] }) {
                     </span>
                   </div>
                 </td>
+                <td className="px-4 py-3 text-right tabular-nums">{Math.round(r.elo_rating)}</td>
               </tr>
             ))}
           </tbody>

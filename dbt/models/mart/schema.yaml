@@ -1,6 +1,23 @@
 version: 2
 
 models:
+  - name: elo
+    description: "Blended Elo rating across casual head-to-head votes (K=16) and bracket matches (K=32). Backs the sortable Elo column on /ranking."
+    columns:
+      - name: artist_id
+        description: "Spotify's artist_id identifier"
+        tests:
+          - unique
+          - not_null
+      - name: elo_rating
+        description: "Elo rating after every recorded match (casual + bracket), starting from 1500"
+        tests:
+          - not_null
+      - name: games_played
+        description: "Total matches (casual + bracket) this artist has been in"
+        tests:
+          - not_null
+
   - name: rappers
     description: "Contains artists' Spotify data (monthly_listeners, followers, world_rank, seeds)"
     columns:
