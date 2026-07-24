@@ -6,10 +6,10 @@ import { getMasterVolume, setMasterVolume, subscribeMasterVolume } from "@/lib/m
 export function VolumeControl() {
   // Real value is read from localStorage on mount (see masterVolume.ts) --
   // start at the same default so there's no server/client mismatch.
-  const [volume, setVolume] = useState(0.85);
+  const [volume, setVolume] = useState(0.5);
   // Last nonzero volume, so clicking the icon to unmute restores it instead
   // of just always jumping back to the default.
-  const lastNonZeroRef = useRef(0.85);
+  const lastNonZeroRef = useRef(0.5);
 
   useEffect(() => {
     const initial = getMasterVolume();
