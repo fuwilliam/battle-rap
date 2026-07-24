@@ -17,6 +17,12 @@ const streamsFormat = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 1,
 });
 
+// Marquee timing: constant px/sec so long track names don't scroll faster
+// than short ones, plus a pause before scrolling starts so the user has
+// time to read the beginning of the text.
+const MARQUEE_SPEED_PX_PER_SEC = 40;
+const MARQUEE_START_DELAY_S = 1;
+
 function formatDuration(ms: number | null): string {
   if (ms == null) return "";
   const totalSec = Math.round(ms / 1000);
@@ -94,10 +100,16 @@ export function RapperCard({
   const { audioRef, isPlaying, start, stop } = useHoverPreview(rapper.preview_url, autoplay);
   const marqueeTextRef = useRef<HTMLSpanElement>(null);
   const marqueeContainerRef = useRef<HTMLSpanElement>(null);
-  const [overflowing, setOverflowing] = useState(false);
+  const [marquee, setMarquee] = useState<{ overflowing: boolean; duration: number }>({
+    overflowing: false,
+    duration: 0,
+  });
 
   // Only scroll the "now playing" pill when the track/credit text is
   // actually wider than the pill -- short names shouldn't animate at all.
+  // Duration is derived from the text's actual pixel width so every track
+  // scrolls at the same constant speed instead of long names racing by
+  // faster than short ones.
   // marqueeTextRef always wraps a single, non-duplicated copy of the label
   // (see the JSX below) so this measurement stays accurate regardless of
   // whether the looping second copy is currently being rendered.
@@ -106,7 +118,10 @@ export function RapperCard({
     const text = marqueeTextRef.current;
     const container = marqueeContainerRef.current;
     if (!text || !container) return;
-    setOverflowing(text.scrollWidth > container.clientWidth);
+
+    const overflowing = text.scrollWidth > container.clientWidth;
+    const duration = text.scrollWidth / MARQUEE_SPEED_PX_PER_SEC;
+    setMarquee({ overflowing, duration });
   }, [isPlaying, rapper.preview_track_name, rapper.preview_credit, rapper.artist_name]);
 
   return (
@@ -144,12 +159,20 @@ export function RapperCard({
               className="flex min-w-0 flex-1 justify-start overflow-hidden whitespace-nowrap"
             >
               <span
-                className={`inline-flex items-center whitespace-nowrap ${overflowing ? "animate-marquee" : ""}`}
+                className={`inline-flex items-center whitespace-nowrap ${marquee.overflowing ? "animate-marquee" : ""}`}
+                style={
+                  marquee.overflowing
+                    ? {
+                        animationDuration: `${marquee.duration}s`,
+                        animationDelay: `${MARQUEE_START_DELAY_S}s`,
+                      }
+                    : undefined
+                }
               >
                 <span ref={marqueeTextRef}>
                   {rapper.preview_track_name} — {rapper.preview_credit ?? rapper.artist_name}
                 </span>
-                {overflowing && (
+                {marquee.overflowing && (
                   <>
                     <span className="mx-2" aria-hidden="true">
                       •

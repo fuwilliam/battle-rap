@@ -56,7 +56,15 @@ h3 {
    separator of the same width), so translating by exactly -50% of the
    whole (both-copies) width moves it by exactly one label+separator period
    -- the second copy lands precisely where the first started, so the loop
-   is seamless and the scroll never has to pause or jump. */
+   is seamless and the scroll never has to pause or jump.
+
+   Duration and delay are intentionally NOT set here -- RapperCard computes
+   them per-track (constant px/sec based on text width, plus a fixed start
+   delay) and applies them via inline animationDuration / animationDelay,
+   so only animation-name/timing-function/iteration-count live in this
+   class. If a duration were hardcoded here, it would override the inline
+   style and every track would scroll at the same fixed speed regardless
+   of label length. */
 @keyframes marquee {
   0% {
     transform: translateX(0%);
@@ -67,7 +75,9 @@ h3 {
 }
 
 .animate-marquee {
-  animation: marquee 9s linear infinite;
+  animation-name: marquee;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
 }
 
 @keyframes spin-slow {
