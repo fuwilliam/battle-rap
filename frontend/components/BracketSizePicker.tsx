@@ -84,7 +84,15 @@ export function BracketSizePicker({
       {mode === "major_league" && (
         <p className="mt-4 inline-flex items-center gap-1 rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-xs text-accent/80">
           <span aria-hidden="true">ⓘ</span>
-          Bored of the same matchups? Discover new artists in Random mode!
+          Bored of the same matchups? Discover new artists in{" "}
+          <button
+            type="button"
+            onClick={() => setMode("random")}
+            className="underline underline-offset-2 hover:text-accent"
+          >
+            Random mode
+          </button>
+          !
         </p>
       )}
 

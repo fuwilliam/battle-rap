@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import type { Matchup, Rapper } from "@/lib/types";
 import { RapperCard } from "@/components/RapperCard";
 
@@ -72,6 +73,17 @@ export function VoteArena({ initial }: { initial: Matchup }) {
           onPick={() => vote(rapper2, rapper1)}
         />
       </div>
+
+      <p className="mt-8 flex justify-center">
+        <span className="inline-flex items-center gap-1 rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-xs text-accent/80">
+          <span aria-hidden="true">ⓘ</span>
+          Try{" "}
+          <Link href="/bracket" className="underline underline-offset-2 hover:text-accent">
+            Bracket mode
+          </Link>{" "}
+          for a World Cup-esque experience!
+        </span>
+      </p>
     </section>
   );
 }
