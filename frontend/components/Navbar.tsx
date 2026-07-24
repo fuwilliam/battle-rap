@@ -48,6 +48,10 @@ export function Navbar() {
             <span className="text-lg">Battle Rap</span>
           </Link>
           <ModeToggle />
+          {/* separates the mode toggle (navigation) from volume (playback
+              control) so the two control clusters read as distinct groups
+              instead of one long row of loose elements */}
+          <div className="h-6 w-px bg-white/10" aria-hidden="true" />
           <VolumeControl />
         </div>
         <ul className="flex items-center gap-1 text-sm">
