@@ -6,13 +6,14 @@ import type { BracketRankingRow } from "@/lib/types";
 const MEDALS = ["🥇", "🥈", "🥉"];
 const PAGE = 50;
 
-type SortKey = "championships" | "final_fours" | "wins" | "losses" | "win_rate";
+type SortKey = "championships" | "final_fours" | "wins" | "losses" | "win_rate" | "elo_rating";
 
 const COLS: { key: SortKey; label: string }[] = [
   { key: "championships", label: "🏆 Championships" },
   { key: "final_fours", label: "Final Fours" },
   { key: "wins", label: "Wins" },
   { key: "losses", label: "Losses" },
+  { key: "elo_rating", label: "Elo" },
   { key: "win_rate", label: "Win Rate" },
 ];
 
@@ -105,6 +106,7 @@ export function BracketRankingTable({ rows }: { rows: BracketRankingRow[] }) {
                 <td className="px-4 py-3 text-right tabular-nums">{r.final_fours}</td>
                 <td className="px-4 py-3 text-right tabular-nums">{r.wins}</td>
                 <td className="px-4 py-3 text-right tabular-nums">{r.losses}</td>
+                <td className="px-4 py-3 text-right tabular-nums">{Math.round(r.elo_rating)}</td>
                 <td className="px-4 py-3">
                   <div className="relative h-6 w-28 overflow-hidden rounded-md bg-white/5">
                     <div
