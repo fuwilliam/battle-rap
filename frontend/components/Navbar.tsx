@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { VolumeControl } from "./VolumeControl";
 
@@ -44,7 +45,13 @@ export function Navbar() {
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
         <div className="flex items-center gap-4">
           <Link href="/" className="flex items-center gap-2 font-bold tracking-tight">
-            <span className="grid h-8 w-8 place-items-center rounded-md bg-accent text-black">🎤</span>
+            <Image 
+              src="/logo.png" 
+              alt="Battle Rap Logo" 
+              width={32} 
+              height={32} 
+              className="h-8 w-8"
+            />
             <span className="text-lg">Battle Rap</span>
           </Link>
           <ModeToggle />

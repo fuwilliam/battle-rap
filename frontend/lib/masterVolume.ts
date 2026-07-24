@@ -6,7 +6,7 @@
 // [[audio-context-gesture-gotcha]] memory: that route silenced playback
 // entirely since mouseenter doesn't unlock a suspended AudioContext).
 const STORAGE_KEY = "battle-rap:volume";
-const DEFAULT_VOLUME = 0.6; // matches the old hardcoded fade-in target
+const DEFAULT_VOLUME = 0.5; // matches the old hardcoded fade-in target
 
 function clamp(v: number): number {
   return Math.min(1, Math.max(0, v));
