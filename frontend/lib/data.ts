@@ -202,9 +202,7 @@ export async function recordVote(winnerId: string, loserId: string): Promise<voi
 
 // Live leaderboard: aggregate votes straight from raw.results (updates the
 // instant a vote lands) and join to the daily-built rapper stats. No dbt run
-// needed for standings to move. elo_rating is the one exception -- it's
-// inherently sequential (see dbt/models/mart/elo.sql), so it only refreshes
-// on the next dbt run, not per-vote like everything else here.
+// needed for standings to move.
 export async function getRanking(): Promise<RankingRow[]> {
   return query<RankingRow>(
     `WITH wins AS (
@@ -221,12 +219,10 @@ export async function getRanking(): Promise<RankingRow[]> {
        coalesce(w.wins, 0) AS wins,
        coalesce(l.losses, 0) AS losses,
        coalesce(w.wins, 0)::double
-         / nullif(coalesce(w.wins, 0) + coalesce(l.losses, 0), 0) AS win_rate,
-       coalesce(e.elo_rating, 1500) AS elo_rating
+         / nullif(coalesce(w.wins, 0) + coalesce(l.losses, 0), 0) AS win_rate
      FROM mart.rappers r
      LEFT JOIN wins w USING (artist_id)
      LEFT JOIN losses l USING (artist_id)
-     LEFT JOIN mart.elo e USING (artist_id)
      WHERE coalesce(w.wins, 0) + coalesce(l.losses, 0) >= 5
      ORDER BY win_rate DESC, wins DESC, monthly_listeners DESC`,
   );
@@ -443,14 +439,12 @@ export async function getBracketRanking(): Promise<BracketRankingRow[]> {
        coalesce(w.wins, 0) AS wins,
        coalesce(l.losses, 0) AS losses,
        coalesce(w.wins, 0)::double
-         / nullif(coalesce(w.wins, 0) + coalesce(l.losses, 0), 0) AS win_rate,
-       coalesce(e.elo_rating, 1500) AS elo_rating
+         / nullif(coalesce(w.wins, 0) + coalesce(l.losses, 0), 0) AS win_rate
      FROM mart.rappers r
      LEFT JOIN wins w USING (artist_id)
      LEFT JOIN losses l USING (artist_id)
      LEFT JOIN championships c USING (artist_id)
      LEFT JOIN final_four_appearances f USING (artist_id)
-     LEFT JOIN mart.elo e USING (artist_id)
      WHERE coalesce(w.wins, 0) + coalesce(l.losses, 0) > 0
      ORDER BY championships DESC, final_fours DESC, win_rate DESC, wins DESC`,
   );

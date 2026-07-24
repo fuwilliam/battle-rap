@@ -6,7 +6,7 @@ import type { BracketRankingRow } from "@/lib/types";
 const MEDALS = ["🥇", "🥈", "🥉"];
 const PAGE = 50;
 
-type SortKey = "championships" | "final_fours" | "wins" | "losses" | "win_rate" | "elo_rating";
+type SortKey = "championships" | "final_fours" | "wins" | "losses" | "win_rate";
 
 const COLS: { key: SortKey; label: string }[] = [
   { key: "championships", label: "🏆 Championships" },
@@ -14,7 +14,6 @@ const COLS: { key: SortKey; label: string }[] = [
   { key: "wins", label: "Wins" },
   { key: "losses", label: "Losses" },
   { key: "win_rate", label: "Win Rate" },
-  { key: "elo_rating", label: "Elo" },
 ];
 
 export function BracketRankingTable({ rows }: { rows: BracketRankingRow[] }) {
@@ -120,7 +119,6 @@ export function BracketRankingTable({ rows }: { rows: BracketRankingRow[] }) {
                     </span>
                   </div>
                 </td>
-                <td className="px-4 py-3 text-right tabular-nums">{Math.round(r.elo_rating)}</td>
               </tr>
             ))}
           </tbody>

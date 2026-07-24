@@ -42,7 +42,6 @@ export type RankingRow = {
   wins: number;
   losses: number;
   win_rate: number;
-  elo_rating: number;
 };
 
 export type SeedEntry = Rapper & { seed: number };
@@ -59,5 +58,4 @@ export type BracketRankingRow = {
   wins: number;
   losses: number;
   win_rate: number;
-  elo_rating: number;
 };
