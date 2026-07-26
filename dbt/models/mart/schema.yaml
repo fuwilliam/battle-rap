@@ -18,6 +18,27 @@ models:
         tests:
           - not_null
 
+  - name: elo_daily
+    description: >
+      Daily Elo checkpoints -- the full rating vector at the close of each day
+      that had matches. Lets mart.elo replay only today instead of all history;
+      also serves as the Elo-over-time series. Append-only: the current day is
+      excluded until it closes. Caches formula output, so changing K factors or
+      macros/elo_update.sql requires `dbt run --full-refresh -s mart.elo_daily+`.
+    columns:
+      - name: as_of_date
+        description: "The closed day this vector is the state as of. Always < current_date."
+        tests:
+          - not_null
+      - name: artist_id
+        description: "Spotify's artist_id identifier"
+        tests:
+          - not_null
+      - name: elo_rating
+        description: "This artist's Elo after every match up to and including as_of_date"
+        tests:
+          - not_null
+
   - name: rappers
     description: "Contains artists' Spotify data (monthly_listeners, followers, world_rank, seeds)"
     columns:

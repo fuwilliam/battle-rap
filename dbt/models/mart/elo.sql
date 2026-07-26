@@ -1,89 +1,77 @@
--- Elo, blended across both match types: casual head-to-head votes count as
--- "friendlies" (K=16), bracket matches count as "tournament games" (K=32) --
+-- Current Elo, blended across both match types: casual head-to-head votes count
+-- as "friendlies" (K=16), bracket matches count as "tournament games" (K=32) --
 -- a bracket win moves the needle twice as much, same idea as a classical
 -- tournament game mattering more than a casual chess.com blitz. Every artist
 -- starts at 1500 the moment they play their first match (of either kind).
 --
--- Elo is inherently sequential (each match's update depends on the state left
--- by the previous one), so this can't be one flat aggregate like win_rate.
--- The trick: thread the *entire* ratings table through the recursion as a
--- single MAP(artist_id -> rating) value, one row per match, updating just the
--- two entries that played. That keeps the recursive CTE at O(matches) rows
--- instead of O(matches * artists), which a naive "one row per artist per
--- match" snapshot would be.
+-- Elo is inherently sequential (each match's update depends on the state left by
+-- the previous one), so this can't be one flat aggregate like win_rate. But the
+-- rating vector fully summarises everything before it, so history doesn't need
+-- replaying: mart.elo_daily holds the vector as of the last closed day, and this
+-- model only replays the matches after it -- usually just today's.
+--
+-- That's the whole point of the split. Replaying all of history was
+-- O(matches * artists), not O(matches): each recursion step rebuilds the entire
+-- MAP to change two entries, so cost grew with *both* the match count and the
+-- roster, i.e. superlinearly in calendar time. Per-run cost is now
+-- O(today's matches * artists) and stays flat as history piles up.
 WITH RECURSIVE matches AS (
-    SELECT winner_id, loser_id, voted_at, 16.0 AS k_factor
-    FROM {{ ref('stg_results') }}
-
-    UNION ALL
-
-    SELECT winner_id, loser_id, voted_at, 32.0 AS k_factor
-    FROM {{ ref('stg_bracket_results') }}
+    {{ elo_matches() }}
 ),
 
-ordered_matches AS (
+checkpoint_date AS (
+    -- coalesce so a missing/empty elo_daily replays from match #1 rather than
+    -- producing nothing -- correct either way, just slower.
+    SELECT coalesce(max(as_of_date), DATE '1900-01-01') AS as_of_date
+    FROM {{ ref('elo_daily') }}
+),
+
+-- Whatever elo_daily hasn't closed out yet: today, plus any earlier day that
+-- slipped through if a run was missed.
+new_matches AS (
     SELECT
         -- winner_id/loser_id as a tiebreak just makes the order deterministic
         -- for same-timestamp votes -- it doesn't need to mean anything.
-        row_number() OVER (ORDER BY voted_at, winner_id, loser_id) AS match_number,
-        winner_id,
-        loser_id,
-        k_factor
-    FROM matches
+        row_number() OVER (ORDER BY m.voted_at, m.winner_id, m.loser_id) AS match_number,
+        m.winner_id,
+        m.loser_id,
+        m.k_factor
+    FROM matches AS m, checkpoint_date AS c
+    WHERE cast(m.voted_at AS DATE) > c.as_of_date
 ),
 
+seed AS (
+    SELECT coalesce(
+        map_from_entries(list({'key': d.artist_id, 'value': d.elo_rating})),
+        map([]::VARCHAR[], []::DOUBLE[])
+    ) AS ratings
+    FROM {{ ref('elo_daily') }} AS d, checkpoint_date AS c
+    WHERE d.as_of_date = c.as_of_date
+),
+
+-- Threading the whole ratings table through as a single MAP value keeps this at
+-- one row per match rather than one row per artist per match.
 elo_state AS (
-    -- match_number = 0: nobody's played yet.
-    SELECT 0 AS match_number, map([]::VARCHAR[], []::DOUBLE[]) AS ratings
+    SELECT 0 AS match_number, ratings FROM seed
 
     UNION ALL
 
     SELECT
         nxt.match_number,
-        map_from_entries(
-            list_concat(
-                -- carry every other artist's rating forward untouched
-                list_filter(
-                    map_entries(prev.ratings),
-                    lambda entry: entry.key NOT IN (nxt.winner_id, nxt.loser_id)
-                ),
-                -- ...and replace (or add, on a first appearance) the two that played
-                [
-                    {
-                        'key': nxt.winner_id,
-                        'value':
-                            coalesce(prev.ratings[nxt.winner_id], 1500) + nxt.k_factor * (
-                                1 - 1.0 / (1 + power(
-                                    10,
-                                    (coalesce(prev.ratings[nxt.loser_id], 1500)
-                                        - coalesce(prev.ratings[nxt.winner_id], 1500)) / 400.0
-                                ))
-                            )
-                    },
-                    {
-                        'key': nxt.loser_id,
-                        'value':
-                            coalesce(prev.ratings[nxt.loser_id], 1500) + nxt.k_factor * (
-                                0 - 1.0 / (1 + power(
-                                    10,
-                                    (coalesce(prev.ratings[nxt.winner_id], 1500)
-                                        - coalesce(prev.ratings[nxt.loser_id], 1500)) / 400.0
-                                ))
-                            )
-                    }
-                ]
-            )
-        ) AS ratings
+        {{ elo_update('prev', 'nxt') }} AS ratings
     FROM elo_state AS prev
-    JOIN ordered_matches AS nxt ON nxt.match_number = prev.match_number + 1
+    JOIN new_matches AS nxt ON nxt.match_number = prev.match_number + 1
 ),
 
 final_ratings AS (
     SELECT e.key AS artist_id, e.value AS elo_rating
     FROM elo_state, UNNEST(map_entries(ratings)) AS t(e)
-    WHERE match_number = (SELECT max(match_number) FROM ordered_matches)
+    -- No matches since the checkpoint (max = NULL) means the checkpoint itself
+    -- is the answer -- that's match_number 0, the seed row.
+    WHERE match_number = (SELECT coalesce(max(match_number), 0) FROM new_matches)
 ),
 
+-- Flat aggregate over the full history, and cheap, so it isn't checkpointed.
 games_played AS (
     SELECT artist_id, count(*) AS games_played
     FROM (
