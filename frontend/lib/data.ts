@@ -200,34 +200,17 @@ export async function recordVote(winnerId: string, loserId: string): Promise<voi
   );
 }
 
-// Live leaderboard: aggregate votes straight from raw.results (updates the
-// instant a vote lands) and join to the daily-built rapper stats. No dbt run
-// needed for standings to move. elo_rating is the one exception -- it's
-// inherently sequential (see dbt/models/mart/elo.sql), so it only refreshes
-// on the next dbt run, not per-vote like everything else here.
+// Live leaderboard, computed by mart.ranking_live -- a dbt view over
+// raw.results, so it updates the instant a vote lands. The SQL lives in
+// dbt/models/mart/ranking_live.sql so it's tested and documented there instead
+// of duplicated here. elo_rating is the one column that only moves on a dbt
+// run: Elo is sequential, see dbt/models/mart/elo.sql.
+//
+// ORDER BY belongs here rather than in the view -- an outer SELECT isn't
+// guaranteed to preserve a view's internal ordering.
 export async function getRanking(): Promise<RankingRow[]> {
   return query<RankingRow>(
-    `WITH wins AS (
-       SELECT winner_id AS artist_id, count(*) AS wins FROM raw.results GROUP BY 1
-     ),
-     losses AS (
-       SELECT loser_id AS artist_id, count(*) AS losses FROM raw.results GROUP BY 1
-     )
-     SELECT
-       r.artist_id,
-       r.artist_name,
-       r.monthly_listeners,
-       r.image_url,
-       coalesce(w.wins, 0) AS wins,
-       coalesce(l.losses, 0) AS losses,
-       coalesce(w.wins, 0)::double
-         / nullif(coalesce(w.wins, 0) + coalesce(l.losses, 0), 0) AS win_rate,
-       coalesce(e.elo_rating, 1500) AS elo_rating
-     FROM mart.rappers r
-     LEFT JOIN wins w USING (artist_id)
-     LEFT JOIN losses l USING (artist_id)
-     LEFT JOIN mart.elo e USING (artist_id)
-     WHERE coalesce(w.wins, 0) + coalesce(l.losses, 0) >= 5
+    `SELECT * FROM mart.ranking_live
      ORDER BY elo_rating DESC, win_rate DESC, wins DESC`,
   );
 }
@@ -411,47 +394,13 @@ export async function recordBracketVote(
   );
 }
 
-// Bracket standings: proven bracket win rate + championships (winner of the
-// matches_in_round=1 "Final" row) + Final Four appearances (either side of a
-// matches_in_round=2 "semifinal" row -- both semifinalists count, win or lose).
+// Bracket standings: proven bracket win rate + championships + Final Four
+// appearances, computed by mart.bracket_ranking_live. See
+// dbt/models/mart/bracket_ranking_live.sql for how rounds are identified from
+// matches_in_round. Live over raw.bracket_results, same as getRanking.
 export async function getBracketRanking(): Promise<BracketRankingRow[]> {
   return query<BracketRankingRow>(
-    `WITH wins AS (
-       SELECT winner_id AS artist_id, count(*) AS wins FROM raw.bracket_results GROUP BY 1
-     ),
-     losses AS (
-       SELECT loser_id AS artist_id, count(*) AS losses FROM raw.bracket_results GROUP BY 1
-     ),
-     championships AS (
-       SELECT winner_id AS artist_id, count(*) AS championships
-       FROM raw.bracket_results WHERE matches_in_round = 1 GROUP BY 1
-     ),
-     final_four_appearances AS (
-       SELECT artist_id, count(*) AS final_fours FROM (
-         SELECT winner_id AS artist_id FROM raw.bracket_results WHERE matches_in_round = 2
-         UNION ALL
-         SELECT loser_id AS artist_id FROM raw.bracket_results WHERE matches_in_round = 2
-       ) GROUP BY 1
-     )
-     SELECT
-       r.artist_id,
-       r.artist_name,
-       r.monthly_listeners,
-       r.image_url,
-       coalesce(c.championships, 0) AS championships,
-       coalesce(f.final_fours, 0) AS final_fours,
-       coalesce(w.wins, 0) AS wins,
-       coalesce(l.losses, 0) AS losses,
-       coalesce(w.wins, 0)::double
-         / nullif(coalesce(w.wins, 0) + coalesce(l.losses, 0), 0) AS win_rate,
-       coalesce(e.elo_rating, 1500) AS elo_rating
-     FROM mart.rappers r
-     LEFT JOIN wins w USING (artist_id)
-     LEFT JOIN losses l USING (artist_id)
-     LEFT JOIN championships c USING (artist_id)
-     LEFT JOIN final_four_appearances f USING (artist_id)
-     LEFT JOIN mart.elo e USING (artist_id)
-     WHERE coalesce(w.wins, 0) + coalesce(l.losses, 0) > 0
+    `SELECT * FROM mart.bracket_ranking_live
      ORDER BY championships DESC, final_fours DESC, win_rate DESC, wins DESC`,
   );
 }

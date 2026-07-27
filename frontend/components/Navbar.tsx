@@ -8,9 +8,14 @@ import { VolumeControl } from "./VolumeControl";
 const links = [
   { href: "/ranking", label: "Ranking" },
   { href: "/visualize", label: "Visualize" },
+  // static file, not a route -- see scripts/refresh-dbt-docs.sh
+  { href: "/dbt-docs.html", label: "dbt Docs", external: true },
   { href: "https://github.com/fuwilliam/battle-rap", label: "Github", external: true },
   { href: "/about", label: "About" },
 ];
+
+const NAV_LINK_CLASS =
+  "rounded-md px-3 py-2 text-white/70 transition hover:bg-white/5 hover:text-white";
 
 const MODES = [
   { href: "/", label: "Head-to-Head" },
@@ -64,13 +69,23 @@ export function Navbar() {
         <ul className="flex items-center gap-1 text-sm">
           {links.map((l) => (
             <li key={l.href}>
-              <Link
-                href={l.href}
-                target={l.external ? "_blank" : undefined}
-                className="rounded-md px-3 py-2 text-white/70 transition hover:bg-white/5 hover:text-white"
-              >
-                {l.label}
-              </Link>
+              {l.external ? (
+                // plain <a>, not Link: Link prefetches every href in the
+                // viewport, and the navbar is always in view -- that would
+                // pull the 2.5MB dbt docs bundle on every page load
+                <a
+                  href={l.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={NAV_LINK_CLASS}
+                >
+                  {l.label}
+                </a>
+              ) : (
+                <Link href={l.href} className={NAV_LINK_CLASS}>
+                  {l.label}
+                </Link>
+              )}
             </li>
           ))}
         </ul>
