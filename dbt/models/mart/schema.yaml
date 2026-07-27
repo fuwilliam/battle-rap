@@ -136,33 +136,12 @@ models:
         tests:
           - not_null
 
-  - name: standings
-    description: "Simple win/loss compilation for the artists battling"
-    columns:
-      - name: artist_id
-        description: "Spotify's artist_id identifier"
-        tests:
-          - unique
-          - not_null
-      - name: artist_name
-        description: "The artist's name"
-        tests:
-          - not_null
-      - name: wins
-        description: "Sum of matchups won by artist"
-        tests:
-          - not_null
-      - name: losses
-        description: "Sum of matchups lost by artist"
-        tests:
-          - not_null
-      - name: win_rate
-        description: "Wins divided by (wins+losses)"
-        tests:
-          - not_null
-
-  - name: rankings
-    description: "Leaderboard: standings joined with artist stats (backs /ranking)"
+  - name: ranking_live
+    description: >
+      Live head-to-head leaderboard backing /ranking. A view over raw.results,
+      so votes are reflected immediately rather than at the next dbt run --
+      elo_rating is the one run-bound column. Callers sort explicitly; the view
+      has no ORDER BY.
     columns:
       - name: artist_id
         description: "Spotify's artist_id identifier"
@@ -175,17 +154,66 @@ models:
           - not_null
       - name: monthly_listeners
         description: "Artist's Spotify monthly listener count"
-      - name: followers
-        description: "Artist's follower count"
+      - name: image_url
+        description: "URL for the artist's profile picture on Spotify"
       - name: wins
-        description: "Sum of matchups won by artist"
+        description: "Sum of head-to-head matchups won by artist"
         tests:
           - not_null
       - name: losses
-        description: "Sum of matchups lost by artist"
+        description: "Sum of head-to-head matchups lost by artist"
         tests:
           - not_null
       - name: win_rate
-        description: "Wins divided by (wins+losses)"
+        description: "Wins divided by (wins+losses); never null given the >= 5 match floor"
+        tests:
+          - not_null
+      - name: elo_rating
+        description: "Blended Elo from mart.elo, defaulting to 1500 for artists with no rating yet"
+        tests:
+          - not_null
+
+  - name: bracket_ranking_live
+    description: >
+      Live bracket leaderboard backing /ranking's bracket table. A view over
+      raw.bracket_results. Rounds are identified by matches_in_round: 1 is the
+      Final, 2 the semifinals (both semifinalists count as a Final Four
+      appearance). Callers sort explicitly; the view has no ORDER BY.
+    columns:
+      - name: artist_id
+        description: "Spotify's artist_id identifier"
+        tests:
+          - unique
+          - not_null
+      - name: artist_name
+        description: "The artist's name"
+        tests:
+          - not_null
+      - name: monthly_listeners
+        description: "Artist's Spotify monthly listener count"
+      - name: image_url
+        description: "URL for the artist's profile picture on Spotify"
+      - name: championships
+        description: "Bracket runs won outright (winner of the matches_in_round = 1 Final)"
+        tests:
+          - not_null
+      - name: final_fours
+        description: "Semifinal appearances (either side of a matches_in_round = 2 match)"
+        tests:
+          - not_null
+      - name: wins
+        description: "Sum of bracket matches won by artist"
+        tests:
+          - not_null
+      - name: losses
+        description: "Sum of bracket matches lost by artist"
+        tests:
+          - not_null
+      - name: win_rate
+        description: "Wins divided by (wins+losses); never null given the > 0 match floor"
+        tests:
+          - not_null
+      - name: elo_rating
+        description: "Blended Elo from mart.elo, defaulting to 1500 for artists with no rating yet"
         tests:
           - not_null
