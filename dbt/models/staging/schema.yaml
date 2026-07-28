@@ -11,7 +11,11 @@ sources:
 
 models:
   - name: stg_rappers
-    description: "Basically casting load_date to proper timestamp format"
+    description: >
+      One row per artist: their most recent observation out of the append-only
+      raw.rappers history, plus first_seen_at / last_seen_at. Keeping the last
+      good row is what stops a transient ingestion failure from deleting an
+      artist downstream.
     columns:
       - name: artist_id
         description: "Spotify's artist_id identifier"
@@ -38,13 +42,19 @@ models:
           - not_null
       - name: image_url
         description: "URL for the artist's profile picture on Spotify"
-      - name: load_date
-        description: "Timestamp for when the record was initially loaded to Postgres"
+      - name: first_seen_at
+        description: "load_date of the earliest run that ingested this artist"
+        tests:
+          - not_null
+      - name: last_seen_at
+        description: "load_date of the most recent run that ingested this artist -- the staleness clock for mart.rappers_filtered"
         tests:
           - not_null
 
   - name: stg_top_tracks
-    description: "Basically casting load_date to proper timestamp format"
+    description: >
+      Every track from each artist's most recent observation out of the
+      append-only raw.top_tracks history (older snapshots dropped).
     columns:
       - name: artist_id
         description: "Spotify's artist_id identifier"
@@ -68,8 +78,8 @@ models:
           - not_null
       - name: playcount
         description: "Spotify play count for the track"
-      - name: load_date
-        description: "Timestamp for when the record was initially loaded to Postgres"
+      - name: last_seen_at
+        description: "load_date of the run this track set came from"
         tests:
           - not_null
 

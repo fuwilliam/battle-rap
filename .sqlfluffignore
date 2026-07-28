@@ -1,0 +1,6 @@
+# dbt build artifacts -- compiled copies of the models we already lint
+target/
+dbt/target/
+dbt/logs/
+dbt_packages/
+dbt/dbt_packages/

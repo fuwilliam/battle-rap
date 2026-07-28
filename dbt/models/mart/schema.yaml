@@ -67,8 +67,12 @@ models:
           - not_null
       - name: image_url
         description: "URL for the artist's profile picture on Spotify"
-      - name: load_date
-        description: "Timestamp for when the record was initially loaded to Postgres"
+      - name: first_seen_at
+        description: "load_date of the earliest run that ingested this artist"
+        tests:
+          - not_null
+      - name: last_seen_at
+        description: "load_date of the most recent run that ingested this artist. Stale rows survive here on purpose; rappers_filtered is where they're retired."
         tests:
           - not_null
 
@@ -100,13 +104,18 @@ models:
           - not_null
       - name: playcount
         description: "Spotify play count for the track"
-      - name: load_date
-        description: "Timestamp for when the record was initially loaded to Postgres"
+      - name: last_seen_at
+        description: "load_date of the run this track set came from"
         tests:
           - not_null
 
   - name: rappers_filtered
-    description: "Artists filtered by monthly_listeners, core-genre seed and followers"
+    description: >
+      Artists eligible for battles: core-genre seed, monthly_listeners > 1M,
+      followers > 100k, and seen by ingestion within the last 14 days. The
+      staleness window is the resilience knob -- one failed scrape no longer
+      pulls an artist out of the pool, a genuine delisting still clears within
+      two weeks.
     columns:
       - name: artist_id
         description: "Spotify's artist_id identifier"
@@ -131,8 +140,12 @@ models:
         description: "Comma-separated discovery seeds that surfaced the artist"
       - name: image_url
         description: "URL for the artist's profile picture on Spotify"
-      - name: load_date
-        description: "Timestamp for when the record was initially loaded to Postgres"
+      - name: first_seen_at
+        description: "load_date of the earliest run that ingested this artist"
+        tests:
+          - not_null
+      - name: last_seen_at
+        description: "load_date of the most recent run that ingested this artist. Always within the 14-day staleness window at this layer."
         tests:
           - not_null
 

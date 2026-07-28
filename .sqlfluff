@@ -1,0 +1,80 @@
+[sqlfluff]
+# Same ruleset as the bi-* Pulumi/BigQuery repos, with two changes for this project:
+#   * dialect duckdb (MotherDuck is cloud DuckDB), not bigquery
+#   * templater dbt, not jinja -- ref()/source()/config(), the elo macros and the
+#     {% snapshot %} block only resolve through dbt; plain jinja can't parse them.
+#     Linting compiles the project, so point DBT_DUCKDB_PATH at a throwaway file
+#     to keep sqlfluff off MotherDuck (no token needed).
+dialect = duckdb
+templater = dbt
+max_line_length = 160
+large_file_skip_byte_limit = 0
+# the recursive-CTE Elo models nest past the stock 255-level parse limit, which
+# is a DoS guard rather than a style rule -- raise it instead of exempting the
+# most complex SQL in the project from linting
+max_parse_depth = 2000
+recursion_limit = 5000
+indent_unit = space
+exclude_rules = ambiguous.column_count, structure.column_order, references.from
+
+[sqlfluff:templater:dbt]
+project_dir = dbt
+profiles_dir = dbt
+profile = default
+target = prod
+
+[sqlfluff:indentation]
+tab_space_size = 4
+indented_using_on = True
+allow_implicit_indents = True
+indented_on_contents = False
+template_blocks_indent = False
+
+[sqlfluff:layout:type:comma]
+spacing_before = touch
+line_position = trailing
+
+[sqlfluff:rules:references.special_chars]
+additional_allowed_characters = "{}"
+
+[sqlfluff:rules:aliasing.table]
+aliasing = explicit
+
+[sqlfluff:rules:aliasing.column]
+aliasing = explicit
+
+[sqlfluff:rules:aliasing.length]
+min_alias_length = 3
+
+[sqlfluff:rules:aliasing.expression]
+allow_scalar = False
+
+[sqlfluff:rules:capitalisation.keywords]
+capitalisation_policy = lower
+
+[sqlfluff:rules:capitalisation.identifiers]
+extended_capitalisation_policy = lower
+
+[sqlfluff:rules:capitalisation.functions]
+extended_capitalisation_policy = lower
+
+[sqlfluff:rules:capitalisation.literals]
+capitalisation_policy = lower
+
+[sqlfluff:rules:capitalisation.types]
+extended_capitalisation_policy = lower
+
+[sqlfluff:rules:convention.not_equal]
+preferred_not_equal_style = c_style
+
+# 1. Target the elements inside the FROM/JOIN specifically
+[sqlfluff:layout:type:from_expression_element]
+spacing_before = single:inline
+
+# 2. Target the alias specifically
+[sqlfluff:layout:type:alias_expression]
+spacing_before = single:inline
+
+# 3. Explicitly allow newlines for WHERE/AND/OR logic
+[sqlfluff:layout:type:expression]
+line_position = leading

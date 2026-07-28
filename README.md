@@ -12,7 +12,7 @@ A project built to answer the quintessential question: who is the greatest rappe
 
 **Transform** — [dbt](https://www.getdbt.com/) (`dbt-duckdb`) builds staging → mart models, with tests and snapshots. Includes `mart.elo` — a blended Elo rating (casual head-to-head + bracket matches weighted higher) computed with a recursive CTE, since Elo is inherently sequential and can't be a flat aggregate.
 
-**Ingestion** — Python 3.12 + [`spotapi`](https://github.com/Aran404/SpotAPI) (Spotify's internal web endpoints — no API key, no Premium needed), seeded by hip-hop genres/playlists, one fetch per artist parallelized with a thread pool. Deps locked with [uv](https://docs.astral.sh/uv/).
+**Ingestion** — Python 3.12 + [`spotapi`](https://github.com/Aran404/SpotAPI) (Spotify's internal web endpoints — no API key, no Premium needed), seeded by hip-hop genres/playlists, one fetch per artist parallelized with a thread pool. Deps locked with [uv](https://docs.astral.sh/uv/). Scraping an unofficial endpoint means routine partial failures, so the `raw` tables are append-only snapshots: `stg_rappers` keeps each artist's last good observation and `mart.rappers_filtered` retires them only after 14 days unseen, instead of a single rate-limited run emptying the battle pool.
 
 **Orchestration** — [GitHub Actions](.github/workflows/refresh-rappers.yml) runs the daily ingest + `dbt build` on a cron.
 

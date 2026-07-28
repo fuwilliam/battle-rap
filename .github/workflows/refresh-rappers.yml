@@ -21,8 +21,9 @@ jobs:
         with:
           enable-cache: true
 
-      # installs the exact locked deps (and provisions Python per requires-python)
-      - run: uv sync --frozen
+      # installs the exact locked deps (and provisions Python per requires-python).
+      # --no-dev skips sqlfluff and friends; the daily pipeline never lints.
+      - run: uv sync --frozen --no-dev
 
       - name: Ingest Spotify → MotherDuck
         run: uv run python -m ingestion.load_rappers

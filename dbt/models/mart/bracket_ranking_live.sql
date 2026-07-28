@@ -11,58 +11,66 @@
 --
 -- No ORDER BY: an outer SELECT isn't guaranteed to preserve a view's internal
 -- ordering, so callers sort explicitly.
-WITH wins AS (
-    SELECT winner_id AS artist_id, count(*) AS wins
-    FROM {{ source('raw', 'bracket_results') }}
-    GROUP BY 1
+with wins as (
+    select
+        winner_id as artist_id,
+        count(*) as wins
+    from {{ source('raw', 'bracket_results') }}
+    group by 1
 ),
 
-losses AS (
-    SELECT loser_id AS artist_id, count(*) AS losses
-    FROM {{ source('raw', 'bracket_results') }}
-    GROUP BY 1
+losses as (
+    select
+        loser_id as artist_id,
+        count(*) as losses
+    from {{ source('raw', 'bracket_results') }}
+    group by 1
 ),
 
-championships AS (
-    SELECT winner_id AS artist_id, count(*) AS championships
-    FROM {{ source('raw', 'bracket_results') }}
-    WHERE matches_in_round = 1
-    GROUP BY 1
+championships as (
+    select
+        winner_id as artist_id,
+        count(*) as championships
+    from {{ source('raw', 'bracket_results') }}
+    where matches_in_round = 1
+    group by 1
 ),
 
-final_four_appearances AS (
-    SELECT artist_id, count(*) AS final_fours
-    FROM (
-        SELECT winner_id AS artist_id
-        FROM {{ source('raw', 'bracket_results') }}
-        WHERE matches_in_round = 2
+final_four_appearances as (
+    select
+        artist_id,
+        count(*) as final_fours
+    from (
+        select winner_id as artist_id
+        from {{ source('raw', 'bracket_results') }}
+        where matches_in_round = 2
 
-        UNION ALL
+        union all
 
-        SELECT loser_id AS artist_id
-        FROM {{ source('raw', 'bracket_results') }}
-        WHERE matches_in_round = 2
+        select loser_id as artist_id
+        from {{ source('raw', 'bracket_results') }}
+        where matches_in_round = 2
     )
-    GROUP BY 1
+    group by 1
 )
 
-SELECT
-    r.artist_id,
-    r.artist_name,
-    r.monthly_listeners,
-    r.image_url,
-    coalesce(c.championships, 0) AS championships,
-    coalesce(f.final_fours, 0) AS final_fours,
-    coalesce(w.wins, 0) AS wins,
-    coalesce(l.losses, 0) AS losses,
-    coalesce(w.wins, 0)::DOUBLE
-        / nullif(coalesce(w.wins, 0) + coalesce(l.losses, 0), 0) AS win_rate,
-    coalesce(e.elo_rating, 1500) AS elo_rating
-FROM {{ ref('rappers') }} AS r
-LEFT JOIN wins AS w USING (artist_id)
-LEFT JOIN losses AS l USING (artist_id)
-LEFT JOIN championships AS c USING (artist_id)
-LEFT JOIN final_four_appearances AS f USING (artist_id)
-LEFT JOIN {{ ref('elo') }} AS e USING (artist_id)
+select
+    rap.artist_id,
+    rap.artist_name,
+    rap.monthly_listeners,
+    rap.image_url,
+    coalesce(title_counts.championships, 0) as championships,
+    coalesce(final_four_counts.final_fours, 0) as final_fours,
+    coalesce(win_counts.wins, 0) as wins,
+    coalesce(loss_counts.losses, 0) as losses,
+    coalesce(win_counts.wins, 0)::double
+    / nullif(coalesce(win_counts.wins, 0) + coalesce(loss_counts.losses, 0), 0) as win_rate,
+    coalesce(elo_ratings.elo_rating, 1500) as elo_rating
+from {{ ref('rappers') }} as rap
+left join wins as win_counts on rap.artist_id = win_counts.artist_id
+left join losses as loss_counts on rap.artist_id = loss_counts.artist_id
+left join championships as title_counts on rap.artist_id = title_counts.artist_id
+left join final_four_appearances as final_four_counts on rap.artist_id = final_four_counts.artist_id
+left join {{ ref('elo') }} as elo_ratings on rap.artist_id = elo_ratings.artist_id
 -- must have actually played a bracket match
-WHERE coalesce(w.wins, 0) + coalesce(l.losses, 0) > 0
+where coalesce(win_counts.wins, 0) + coalesce(loss_counts.losses, 0) > 0

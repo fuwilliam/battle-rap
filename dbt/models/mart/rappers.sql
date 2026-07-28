@@ -1,6 +1,6 @@
 -- genres are no longer available per-artist; genre relevance comes from the
 -- discovery seed, surfaced as flag_core_genre in staging.
-SELECT
+select
     artist_id,
     artist_name,
     monthly_listeners,
@@ -9,5 +9,6 @@ SELECT
     seeds,
     flag_core_genre,
     image_url,
-    load_date
-FROM {{ ref('stg_rappers') }}
+    first_seen_at,
+    last_seen_at
+from {{ ref('stg_rappers') }}

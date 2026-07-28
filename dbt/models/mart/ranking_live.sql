@@ -16,31 +16,35 @@
 --
 -- No ORDER BY: an outer SELECT isn't guaranteed to preserve a view's internal
 -- ordering, so callers sort explicitly.
-WITH wins AS (
-    SELECT winner_id AS artist_id, count(*) AS wins
-    FROM {{ source('raw', 'results') }}
-    GROUP BY 1
+with wins as (
+    select
+        winner_id as artist_id,
+        count(*) as wins
+    from {{ source('raw', 'results') }}
+    group by 1
 ),
 
-losses AS (
-    SELECT loser_id AS artist_id, count(*) AS losses
-    FROM {{ source('raw', 'results') }}
-    GROUP BY 1
+losses as (
+    select
+        loser_id as artist_id,
+        count(*) as losses
+    from {{ source('raw', 'results') }}
+    group by 1
 )
 
-SELECT
-    r.artist_id,
-    r.artist_name,
-    r.monthly_listeners,
-    r.image_url,
-    coalesce(w.wins, 0) AS wins,
-    coalesce(l.losses, 0) AS losses,
-    coalesce(w.wins, 0)::DOUBLE
-        / nullif(coalesce(w.wins, 0) + coalesce(l.losses, 0), 0) AS win_rate,
-    coalesce(e.elo_rating, 1500) AS elo_rating
-FROM {{ ref('rappers') }} AS r
-LEFT JOIN wins AS w USING (artist_id)
-LEFT JOIN losses AS l USING (artist_id)
-LEFT JOIN {{ ref('elo') }} AS e USING (artist_id)
+select
+    rap.artist_id,
+    rap.artist_name,
+    rap.monthly_listeners,
+    rap.image_url,
+    coalesce(win_counts.wins, 0) as wins,
+    coalesce(loss_counts.losses, 0) as losses,
+    coalesce(win_counts.wins, 0)::double
+    / nullif(coalesce(win_counts.wins, 0) + coalesce(loss_counts.losses, 0), 0) as win_rate,
+    coalesce(elo_ratings.elo_rating, 1500) as elo_rating
+from {{ ref('rappers') }} as rap
+left join wins as win_counts on rap.artist_id = win_counts.artist_id
+left join losses as loss_counts on rap.artist_id = loss_counts.artist_id
+left join {{ ref('elo') }} as elo_ratings on rap.artist_id = elo_ratings.artist_id
 -- fewer than 5 matches isn't a record yet
-WHERE coalesce(w.wins, 0) + coalesce(l.losses, 0) >= 5
+where coalesce(win_counts.wins, 0) + coalesce(loss_counts.losses, 0) >= 5

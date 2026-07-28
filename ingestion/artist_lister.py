@@ -7,8 +7,12 @@ genres): every artist carries the set of seeds that surfaced them, e.g.
 {"rap", "Rap Caviar"}. Enrichment fetches each artist once, in parallel.
 """
 
+import random
+import time
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
+
+from spotapi.exceptions import ArtistError, BaseClientError, RequestError
 
 from ingestion.spotify_client import SpotifyClient
 from ingestion.spotify_dicts import denylist, loose_seeds
@@ -16,6 +20,18 @@ from ingestion.spotify_dicts import denylist, loose_seeds
 # all configured seeds are curated hip-hop, so an artist is "core" as long as
 # at least one of their seeds isn't a noise-prone loose seed (case-insensitive)
 _LOOSE = {s.lower() for s in loose_seeds}
+
+# Spotify rate-limits the pathfinder endpoint, and with max_workers in flight a
+# burst of 429s is routine -- the 2026-07-27 run lost 29 artists (Pusha T,
+# Denzel Curry, Bad Bunny...) to one-shot failures that all succeed on retry.
+# Jitter matters here (unlike the hash bootstrap, which is a single chain):
+# without it every worker that got throttled retries in lockstep.
+_FETCH_ATTEMPTS = 3
+_FETCH_BACKOFF = 2  # seconds, doubled per retry, plus up to 1s of jitter
+
+# transient at the HTTP layer -- worth retrying. anything else (a malformed
+# payload, a missing key) will fail identically on every attempt, so skip fast.
+_RETRYABLE = (ArtistError, BaseClientError, RequestError)
 
 
 def _is_core(seeds):
@@ -69,11 +85,20 @@ class ArtistLister:
         """
 
         def work(aid):
-            try:
-                return aid, self.client.fetch_artist(aid)
-            except Exception as e:  # skip artists the scrape can't resolve
-                print(f"skip artist {aid} ({artist_dict[aid]['name']}): {e}")
-                return aid, None
+            name = artist_dict[aid]["name"]
+            for attempt in range(1, _FETCH_ATTEMPTS + 1):
+                try:
+                    return aid, self.client.fetch_artist(aid)
+                except _RETRYABLE as e:
+                    # spotapi keeps the HTTP status on .error and out of str(e)
+                    detail = getattr(e, "error", None)
+                    if attempt == _FETCH_ATTEMPTS:
+                        print(f"skip artist {aid} ({name}) after {attempt} tries: {e} ({detail})")
+                        return aid, None
+                    time.sleep(_FETCH_BACKOFF * 2 ** (attempt - 1) + random.uniform(0, 1))
+                except Exception as e:  # skip artists the scrape can't resolve
+                    print(f"skip artist {aid} ({name}): {e}")
+                    return aid, None
 
         enriched = {}
         with ThreadPoolExecutor(max_workers=max_workers) as ex:

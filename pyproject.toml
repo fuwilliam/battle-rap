@@ -19,3 +19,12 @@ dependencies = [
 [tool.uv]
 # this is an application, not a library -- don't try to build/install the repo
 package = false
+
+[dependency-groups]
+# SQL linting only -- the daily pipeline installs with `uv sync --no-dev`.
+# sqlfluff-templater-dbt lets sqlfluff compile the project so ref()/source()/
+# macros/{% snapshot %} resolve; config lives in .sqlfluff at the repo root.
+dev = [
+    "sqlfluff>=4.2.2",
+    "sqlfluff-templater-dbt>=4.2.2",
+]
