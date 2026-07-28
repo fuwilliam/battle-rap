@@ -17,8 +17,11 @@ this breaks until spotapi ships an update (`pip install -U spotapi`).
 """
 
 import threading
+import time
 
 from spotapi import Artist, Public, PublicPlaylist
+from spotapi.client import BaseClient
+from spotapi.exceptions import BaseClientError, RequestError
 
 TRACK_EMBED = "https://open.spotify.com/embed/track/{}?utm_source=generator"
 
@@ -34,12 +37,63 @@ def _artist():
     return client
 
 
+# ---- GraphQL hash bootstrap ---------------------------------------------
+#
+# Every spotapi call needs the persisted-query sha256 hashes, which spotapi
+# scrapes out of the web player's JS: one 4.5MB pack + ~72 CDN chunks, all
+# fetched serially. It caches the result on the BaseClient *instance*, and
+# each Public.* call and each worker thread builds a fresh instance -- so a
+# run repeats that ~73-request crawl ~24 times. Any single non-200 anywhere
+# in it aborts the whole job with `BaseClientError("Could not get general
+# hashes")`, and spotapi never retries (that's the 2026-07-28 CI failure).
+#
+# So bootstrap once, with retries, and publish the result as a BaseClient
+# class attribute: later instances see `raw_hashes` already set and skip the
+# crawl entirely (they still open their own session for tokens, which is a
+# couple of cheap requests).
+
+_HASH_ATTEMPTS = 4
+_HASH_BACKOFF = 5  # seconds, doubled per retry
+_hash_lock = threading.Lock()
+
+
+def prime_hashes(attempts=_HASH_ATTEMPTS):
+    """Fetch the GraphQL hashes once and share them across all spotapi clients."""
+    with _hash_lock:
+        if BaseClient.raw_hashes:  # _Undefined is falsy
+            return
+
+        for attempt in range(1, attempts + 1):
+            # a fresh Artist each try -- a new TLS session and cookies, in case
+            # the previous one is what Spotify objected to
+            base = Artist().base
+            try:
+                base.get_session()
+                base.get_sha256_hash()
+            except (BaseClientError, RequestError) as exc:
+                # spotapi stores the underlying HTTP error on `.error` and
+                # leaves it out of str(exc), which is why CI logs show a bare
+                # "Could not get general hashes" with no status code
+                detail = getattr(exc, "error", None)
+                print(f"Hash bootstrap attempt {attempt}/{attempts} failed: {exc} ({detail})")
+                if attempt == attempts:
+                    raise
+                time.sleep(_HASH_BACKOFF * 2 ** (attempt - 1))
+                continue
+
+            BaseClient.raw_hashes = base.raw_hashes
+            return
+
+
 def _uri_id(uri):
     """spotify:artist:XXXX -> XXXX (ids come back as either uri or bare id)."""
     return uri.rsplit(":", 1)[-1] if uri else uri
 
 
 class SpotifyClient:
+    def __init__(self):
+        prime_hashes()
+
     # ---- discovery -----------------------------------------------------
 
     def artists_from_playlist(self, playlist_id):

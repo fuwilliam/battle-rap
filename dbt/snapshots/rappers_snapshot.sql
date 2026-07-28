@@ -8,11 +8,10 @@
         )
     }}
 
-SELECT
-  artist_id,
-  monthly_listeners,
-  followers,
-  load_date
-FROM {{ ref('rappers_filtered') }}
-
+select
+    artist_id,
+    monthly_listeners,
+    followers,
+    last_seen_at
+from {{ ref('rappers_filtered') }}
 {% endsnapshot %}

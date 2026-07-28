@@ -7,6 +7,7 @@ Run from the repo root:  python -m ingestion.load_rappers
 
 import os
 import time
+from datetime import datetime
 
 import duckdb
 from dotenv import load_dotenv
@@ -59,11 +60,27 @@ def load_to_db(rapper_rows, track_rows, con):
 
     con.execute("CREATE SCHEMA IF NOT EXISTS raw")
 
-    # full-refresh the raw tables; load_date stamped in SQL so every row of a
-    # run shares one timestamp source.
+    # One timestamp for the entire run, bound as a parameter. It CANNOT be
+    # `now()` inside the INSERT: executemany evaluates that per row, which gave
+    # all 5000 track rows distinct microsecond stamps -- and staging picks each
+    # artist's latest snapshot by load_date, so "latest" collapsed to a single
+    # track per artist instead of their top 10.
+    run_ts = datetime.now()
+
+    # The raw tables are APPEND-ONLY: one snapshot row per artist per run, every
+    # row of that run sharing run_ts. They used to be CREATE OR REPLACE, which
+    # meant a single transient
+    # Spotify failure during enrichment erased that artist everywhere
+    # downstream -- the 2026-07-27 run silently dropped Pusha T and 28 others
+    # out of the battle pool. Keeping history lets stg_rappers fall back to an
+    # artist's last good observation and age them out on last_seen_at instead
+    # (see mart/rappers_filtered.sql). ~600 rows/day is nothing to store.
+    #
+    # Re-running on the same day replaces that day's rows rather than stacking
+    # a second snapshot, so a manual re-run stays idempotent.
     con.execute(
         """
-        CREATE OR REPLACE TABLE raw.rappers (
+        CREATE TABLE IF NOT EXISTS raw.rappers (
             artist_id         VARCHAR,
             artist_name       VARCHAR,
             monthly_listeners BIGINT,
@@ -77,8 +94,9 @@ def load_to_db(rapper_rows, track_rows, con):
         """
     )
     if rapper_rows:
+        con.execute("DELETE FROM raw.rappers WHERE load_date::DATE = current_date")
         con.executemany(
-            "INSERT INTO raw.rappers VALUES (?, ?, ?, ?, ?, ?, ?, ?, now()::TIMESTAMP)",
+            "INSERT INTO raw.rappers VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 (
                     r["artist_id"],
@@ -89,14 +107,18 @@ def load_to_db(rapper_rows, track_rows, con):
                     r["image_url"],
                     r["seeds"],
                     r["flag_core_genre"],
+                    run_ts,
                 )
                 for r in rapper_rows
             ],
         )
 
+    # append-only for the same reason as raw.rappers -- and it has to be, or an
+    # artist kept alive by the staleness window would show up in a battle with
+    # no tracks and no hover preview at all.
     con.execute(
         """
-        CREATE OR REPLACE TABLE raw.top_tracks (
+        CREATE TABLE IF NOT EXISTS raw.top_tracks (
             artist_id  VARCHAR,
             track_rank BIGINT,
             track_name VARCHAR,
@@ -108,8 +130,9 @@ def load_to_db(rapper_rows, track_rows, con):
         """
     )
     if track_rows:
+        con.execute("DELETE FROM raw.top_tracks WHERE load_date::DATE = current_date")
         con.executemany(
-            "INSERT INTO raw.top_tracks VALUES (?, ?, ?, ?, ?, ?, now()::TIMESTAMP)",
+            "INSERT INTO raw.top_tracks VALUES (?, ?, ?, ?, ?, ?, ?)",
             [
                 (
                     t["artist_id"],
@@ -118,6 +141,7 @@ def load_to_db(rapper_rows, track_rows, con):
                     t["track_id"],
                     t["track_url"],
                     _int(t["playcount"]),
+                    run_ts,
                 )
                 for t in track_rows
             ],
