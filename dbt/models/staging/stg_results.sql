@@ -4,23 +4,23 @@
         unique_key='matchup_id'
     )
 }}
-WITH results AS
-(
-    SELECT 
+with results as (
+    select
         matchup_id,
         winner_id,
         loser_id,
-        CAST(voted_at AS TIMESTAMP) AS voted_at,
-        ROW_NUMBER() OVER(PARTITION BY winner_id, loser_id, CAST(voted_at AS TIMESTAMP)) AS row_number
-    FROM {{ source('raw', 'results') }}
+        cast(voted_at as timestamp) as voted_at,
+        row_number() over (partition by winner_id, loser_id, cast(voted_at as timestamp)) as row_number
+    from {{ source('raw', 'results') }}
 )
-SELECT
+
+select
     matchup_id,
     winner_id,
     loser_id,
     voted_at
-FROM results
-WHERE row_number = 1
+from results
+where row_number = 1
 {% if is_incremental() %}
     -- coalesce so an empty table (max = NULL) loads everything, not nothing
     AND voted_at > (select coalesce(max(voted_at), timestamp '1900-01-01') from {{ this }})

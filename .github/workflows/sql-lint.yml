@@ -1,0 +1,41 @@
+name: SQL lint (SQLFluff)
+
+# Lint only -- never `sqlfluff fix` in CI. A bot rewriting SQL on a branch races
+# your own pushes and turns a style nit into a merge conflict; the fix belongs on
+# the machine that wrote the query: `uv run sqlfluff fix dbt`.
+on:
+  pull_request:
+    paths:
+      - "dbt/**"
+      - ".sqlfluff"
+      - ".sqlfluffignore"
+      - ".github/workflows/sql-lint.yml"
+  push:
+    branches: [main]
+    paths:
+      - "dbt/**"
+      - ".sqlfluff"
+      - ".sqlfluffignore"
+      - ".github/workflows/sql-lint.yml"
+  workflow_dispatch:
+
+jobs:
+  sqlfluff:
+    runs-on: ubuntu-latest
+    env:
+      # SQLFluff uses the dbt templater, so it compiles the project -- point that
+      # at a scratch DuckDB file so linting never touches MotherDuck and needs no
+      # token. Compilation doesn't read any data.
+      DBT_DUCKDB_PATH: /tmp/sqlfluff-lint.duckdb
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      # dev group carries sqlfluff + sqlfluff-templater-dbt
+      - run: uv sync --frozen
+
+      - name: sqlfluff lint
+        run: uv run sqlfluff lint dbt
