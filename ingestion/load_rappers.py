@@ -10,6 +10,7 @@ import time
 from datetime import datetime
 
 import duckdb
+import pyarrow as pa
 from dotenv import load_dotenv
 
 import ingestion.spotify_dicts
@@ -37,6 +38,61 @@ def compile_artists(lister, genres, playlists):
     return lister.combine_artists(genres, playlists)
 
 
+# Spelled out rather than inferred: an all-NULL column (every artist missing a
+# listener count, every playcount unparseable) infers as Arrow's null type, and
+# the INSERT then fails on a type it can't match to the target column.
+_RAPPERS_SCHEMA = pa.schema(
+    [
+        ("artist_id", pa.string()),
+        ("artist_name", pa.string()),
+        ("monthly_listeners", pa.int64()),
+        ("followers", pa.int64()),
+        ("world_rank", pa.int64()),
+        ("image_url", pa.string()),
+        ("seeds", pa.string()),
+        ("flag_core_genre", pa.bool_()),
+        ("load_date", pa.timestamp("us")),
+    ]
+)
+
+_TOP_TRACKS_SCHEMA = pa.schema(
+    [
+        ("artist_id", pa.string()),
+        ("track_rank", pa.int64()),
+        ("track_name", pa.string()),
+        ("track_id", pa.string()),
+        ("track_url", pa.string()),
+        ("playcount", pa.int64()),
+        ("load_date", pa.timestamp("us")),
+    ]
+)
+
+
+def _bulk_insert(con, table, columns, schema):
+    """Load a column dict into `table` as ONE Arrow-backed INSERT.
+
+    NOT executemany(): that issues a separate INSERT per row. Free against a
+    local file, brutal against MotherDuck where every statement is a network
+    round trip -- measured in CI at ~150ms/row, so 4.7k rows took 714s while the
+    Spotify enrichment that produced them took 18s.
+
+    DuckDB scans the Arrow table in place (zero copy) and MotherDuck's hybrid
+    execution ships the result columnar, so the row count stops mattering: one
+    statement, no SQL text to build, and Arrow carries the types instead of
+    inferring them from placeholders.
+    """
+    arrow_table = pa.table(columns, schema=schema)
+    if arrow_table.num_rows == 0:
+        return
+    # bound to a name so the replacement scan can find it, then dropped -- a
+    # lingering registration would shadow a real table of the same name
+    con.register("_bulk_load", arrow_table)
+    try:
+        con.execute(f"INSERT INTO {table} SELECT * FROM _bulk_load")
+    finally:
+        con.unregister("_bulk_load")
+
+
 def connect_motherduck():
     """Open the DuckDB target.
 
@@ -60,21 +116,20 @@ def load_to_db(rapper_rows, track_rows, con):
 
     con.execute("CREATE SCHEMA IF NOT EXISTS raw")
 
-    # One timestamp for the entire run, bound as a parameter. It CANNOT be
-    # `now()` inside the INSERT: executemany evaluates that per row, which gave
-    # all 5000 track rows distinct microsecond stamps -- and staging picks each
-    # artist's latest snapshot by load_date, so "latest" collapsed to a single
-    # track per artist instead of their top 10.
+    # One timestamp for the entire run, carried as a column value. It must NOT be
+    # a `now()` in the SQL, which gets evaluated per row and gave all 5000 track
+    # rows distinct microsecond stamps -- staging picks each artist's latest
+    # snapshot by load_date, so "latest" collapsed to a single track per artist
+    # instead of their top 10.
     run_ts = datetime.now()
 
     # The raw tables are APPEND-ONLY: one snapshot row per artist per run, every
     # row of that run sharing run_ts. They used to be CREATE OR REPLACE, which
-    # meant a single transient
-    # Spotify failure during enrichment erased that artist everywhere
-    # downstream -- the 2026-07-27 run silently dropped Pusha T and 28 others
-    # out of the battle pool. Keeping history lets stg_rappers fall back to an
-    # artist's last good observation and age them out on last_seen_at instead
-    # (see mart/rappers_filtered.sql). ~600 rows/day is nothing to store.
+    # meant a single transient Spotify failure during enrichment erased that
+    # artist everywhere downstream -- the 2026-07-27 run silently dropped Pusha T
+    # and 28 others out of the battle pool. Keeping history lets stg_rappers fall
+    # back to an artist's last good observation and age them out on last_seen_at
+    # instead (see mart/rappers_filtered.sql). ~600 rows/day is nothing to store.
     #
     # Re-running on the same day replaces that day's rows rather than stacking
     # a second snapshot, so a manual re-run stays idempotent.
@@ -95,22 +150,21 @@ def load_to_db(rapper_rows, track_rows, con):
     )
     if rapper_rows:
         con.execute("DELETE FROM raw.rappers WHERE load_date::DATE = current_date")
-        con.executemany(
-            "INSERT INTO raw.rappers VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            [
-                (
-                    r["artist_id"],
-                    r["artist_name"],
-                    r["monthly_listeners"],
-                    r["followers"],
-                    r["world_rank"],
-                    r["image_url"],
-                    r["seeds"],
-                    r["flag_core_genre"],
-                    run_ts,
-                )
-                for r in rapper_rows
-            ],
+        _bulk_insert(
+            con,
+            "raw.rappers",
+            {
+                "artist_id": [r["artist_id"] for r in rapper_rows],
+                "artist_name": [r["artist_name"] for r in rapper_rows],
+                "monthly_listeners": [r["monthly_listeners"] for r in rapper_rows],
+                "followers": [r["followers"] for r in rapper_rows],
+                "world_rank": [r["world_rank"] for r in rapper_rows],
+                "image_url": [r["image_url"] for r in rapper_rows],
+                "seeds": [r["seeds"] for r in rapper_rows],
+                "flag_core_genre": [r["flag_core_genre"] for r in rapper_rows],
+                "load_date": [run_ts] * len(rapper_rows),
+            },
+            _RAPPERS_SCHEMA,
         )
 
     # append-only for the same reason as raw.rappers -- and it has to be, or an
@@ -131,20 +185,19 @@ def load_to_db(rapper_rows, track_rows, con):
     )
     if track_rows:
         con.execute("DELETE FROM raw.top_tracks WHERE load_date::DATE = current_date")
-        con.executemany(
-            "INSERT INTO raw.top_tracks VALUES (?, ?, ?, ?, ?, ?, ?)",
-            [
-                (
-                    t["artist_id"],
-                    t["track_rank"],
-                    t["track_name"],
-                    t["track_id"],
-                    t["track_url"],
-                    _int(t["playcount"]),
-                    run_ts,
-                )
-                for t in track_rows
-            ],
+        _bulk_insert(
+            con,
+            "raw.top_tracks",
+            {
+                "artist_id": [t["artist_id"] for t in track_rows],
+                "track_rank": [t["track_rank"] for t in track_rows],
+                "track_name": [t["track_name"] for t in track_rows],
+                "track_id": [t["track_id"] for t in track_rows],
+                "track_url": [t["track_url"] for t in track_rows],
+                "playcount": [_int(t["playcount"]) for t in track_rows],
+                "load_date": [run_ts] * len(track_rows),
+            },
+            _TOP_TRACKS_SCHEMA,
         )
 
     # votes are written by the webapp; make sure the table exists so dbt's
